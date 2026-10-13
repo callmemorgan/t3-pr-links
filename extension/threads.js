@@ -21,18 +21,24 @@ function parseInput(value, branchValue = "") {
 
 function shownThreads() {
   const query = searchInput.value.trim().toLowerCase();
-  return T3Settings.sort(T3Settings.filter(result?.threads || []).filter(thread => !query || [thread.title, thread.branch, thread.project]
+  return T3Settings.sort(T3Settings.filter(result?.threads || []).filter(thread => !query || [thread.title, thread.branch, thread.matchedBranch, thread.project]
     .some(value => typeof value === "string" && value.toLowerCase().includes(query))), { repository: !loadedPullRequest && !loadedBranch });
 }
 
 function render() {
+  renderFilters();
   const container = document.getElementById("threads");
   container.replaceChildren();
+  document.getElementById("filter-notice").hidden = true;
   document.getElementById("export").disabled = !result?.ok || !shownThreads().length;
   if (!result) return;
   const all = result.threads || [];
   const threads = shownThreads();
   document.getElementById("count").textContent = `${threads.length} shown · ${all.length} loaded${result.truncated ? " · More threads exist; results were limited." : ""}`;
+  if (all.length > threads.length) {
+    document.getElementById("filter-notice").hidden = false;
+    document.getElementById("filter-count").textContent = `${all.length - threads.length} hidden by your search or display filters.`;
+  }
   for (const thread of threads) {
     const card = T3Ui.element(document, "article", "thread");
     const row = T3Ui.threadRow(document, thread, { actions: true });
@@ -128,6 +134,47 @@ document.getElementById("export").addEventListener("click", () => {
 
 document.getElementById("lookup").addEventListener("submit", event => { event.preventDefault(); void load(); });
 searchInput.addEventListener("input", render);
+
+function renderFilters() {
+  const preferences = T3Settings.get();
+  for (const key of ["includeArchived", "includeBranch", "liveBranches"]) document.getElementById(key).checked = preferences[key];
+  const computers = new Map((result?.environments || []).map(environment => [environment.name, environment.ok]));
+  for (const thread of result?.threads || []) {
+    const name = thread.computer || "This computer";
+    if (!computers.has(name)) computers.set(name, true);
+  }
+  if (preferences.computer !== "all" && !computers.has(preferences.computer)) computers.set(preferences.computer, null);
+  const select = document.getElementById("computer");
+  const all = T3Ui.element(document, "option", "", "All configured computers");
+  all.value = "all";
+  select.replaceChildren(all);
+  for (const [name, ok] of computers) {
+    const option = T3Ui.element(document, "option", "", `${name}${ok === false ? " (unavailable)" : ok === null ? " (not in this lookup)" : ""}`);
+    option.value = name;
+    select.append(option);
+  }
+  select.value = preferences.computer;
+}
+
+for (const key of ["includeArchived", "includeBranch", "liveBranches", "computer"]) {
+  document.getElementById(key).addEventListener("change", async event => {
+    try {
+      await T3Settings.update({ [key]: key === "computer" ? event.target.value : event.target.checked });
+      document.getElementById("settings-error").textContent = "";
+    } catch {
+      document.getElementById("settings-error").textContent = "Could not save this preference. Please try again.";
+      renderFilters();
+    }
+  });
+}
+document.getElementById("show-all").addEventListener("click", async () => {
+  try {
+    await T3Settings.update({ includeArchived: true, includeBranch: true, computer: "all" });
+    searchInput.value = "";
+    document.getElementById("settings-error").textContent = "";
+    render();
+  } catch { document.getElementById("settings-error").textContent = "Could not reset your display filters. Please try again."; }
+});
 const sortInput = document.getElementById("sort");
 sortInput.addEventListener("change", async () => {
   try { await T3Settings.update({ sort: sortInput.value }); }

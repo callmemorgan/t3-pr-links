@@ -10,6 +10,7 @@ select { font: inherit; padding: 8px; border-radius: 6px; border: 1px solid ligh
 .result-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; } .result-controls label { margin: 0; }
 .query { display: flex; gap: 10px; } .query input { flex: 1; min-width: 0; }
 #branch-lookup { margin-top: 12px; } #branch-lookup summary { cursor: pointer; color: light-dark(#6633bc, #c4a7fa); } #branch-lookup label { margin-top: 12px; }
+#display-filters { margin-top: 12px; } #display-filters summary { cursor: pointer; } .filter-fields { margin-top: 12px; } .filter-fields select { margin-bottom: 12px; max-width: 100%; } .checkbox { display: flex; gap: 8px; align-items: center; font-weight: 400; } .checkbox input { width: auto; flex-shrink: 0; } #settings-error { color: light-dark(#9a6700, #f5c66d); } #settings-error:empty { display: none; } #filter-notice { font-size: 12px; } #show-all { font-size: 12px; padding: 4px 8px; }
 button { font: inherit; border: 0; border-radius: 6px; padding: 9px 14px; background: #6838d9; color: white; cursor: pointer; }
 button:disabled { opacity: .6; cursor: wait; }
 #status { margin-top: 24px; font-weight: 600; } #coverage { opacity: .75; margin-top: 5px; }

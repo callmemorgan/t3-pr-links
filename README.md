@@ -64,6 +64,8 @@ The popup links to a **Repository threads** browser. It finds threads associated
 
 In the thread browser, expand **Look up a specific branch** and enter an exact branch name to check recorded and current workspace branches across your configured computers. Branch names are case-sensitive and may contain slashes. Use the fork’s repository for forked branches. Leave Branch blank to browse the repository or look up a pasted PR. The live-workspace preference applies to these lookups, and JSON exports retain the queried branch and observed workspace branch separately.
 
+The thread browser’s **Lookup and display filters** also lets you choose a computer, include archived threads or inferred matches, and control live-workspace lookup. These preferences are shared with the popup and GitHub panels. Display changes filter the loaded results without another computer scan; changing live-workspace lookup rechecks an active branch query. When search or filters hide results, **Show all loaded threads** clears the search and resets display filters without altering lookup settings. Search also checks the observed workspace branch when it differs from T3’s saved branch.
+
 **Check current checkout** in the thread browser reads Git’s current branch from that thread’s saved workspace. It distinguishes a matching branch, a different branch, detached HEAD, and a missing/unreadable workspace. The check runs only when clicked and never changes the checkout.
 
 The toolbar icon shows the visible match count on PR/branch pages, or the number of linked PRs on a list. An amber **!** means some computers could not be checked; its tooltip includes the count.
@@ -121,3 +123,5 @@ Version 1.2.0 adds branch and live-workspace lookup, list badges and list-aware 
 Version 1.2.1 simplifies the GitHub panel to thread links, titles, computers, and matching branches for inferred results. Additional tools and workspace metadata remain in the popup and thread browser.
 
 Version 1.3.0 adds manual branch lookup in the thread browser and fixes manual PR lookup when the browser was opened with repository query parameters.
+
+Version 1.3.1 adds the shared lookup/display filter controls to the thread browser, recovery for hidden results, and search by observed workspace branch.

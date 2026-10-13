@@ -10,8 +10,17 @@
     <div id="status" role="status">Enter a repository to find its T3 threads.</div>
     <p id="coverage"></p>
     <label for="search">Filter by title, branch, or project</label><input id="search" type="search" placeholder="Search loaded threads…">
+    <details id="display-filters"><summary>Lookup and display filters</summary>
+      <div class="filter-fields"><label for="computer">Computer</label><select id="computer"><option value="all">All configured computers</option></select>
+        <label class="checkbox"><input id="includeArchived" type="checkbox"> Include archived threads</label>
+        <label class="checkbox"><input id="includeBranch" type="checkbox"> Include branch matches</label>
+        <label class="checkbox"><input id="liveBranches" type="checkbox"> Check current workspaces for branch matches</label>
+      </div><p class="hint">These preferences also apply to the popup and GitHub panels. Display filters use the loaded results.</p>
+    </details>
+    <p id="settings-error" role="status"></p>
     <div class="result-controls"><label for="sort">Thread order</label><select id="sort"><option value="active">Active first</option><option value="recent">Recent activity</option><option value="title">Thread title</option><option value="branch">Branch</option><option value="computer">Computer</option></select><button id="export" type="button" disabled>Export shown links</button></div>
     <p id="count"></p>
+    <p id="filter-notice" hidden><span id="filter-count"></span> <button id="show-all" type="button">Show all loaded threads</button></p>
     <div id="threads"></div>
     <p id="match-hint" class="hint">Repositories match linked PRs or a workspace’s Git remote. Pasted PR URLs check explicit links; visit the PR on GitHub to include source-branch matches. Your display filters apply here too.</p>
   </main>

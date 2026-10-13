@@ -5,12 +5,12 @@ const path = require("node:path");
 const { JSDOM } = require("jsdom");
 const extension = path.join(__dirname, "../extension");
 const tick = () => new Promise(resolve => setImmediate(resolve));
-function browser(t, sendMessage, query = "?repository=owner%2Frepo") {
+function browser(t, sendMessage, query = "?repository=owner%2Frepo", storage) {
   const dom = new JSDOM(fs.readFileSync(path.join(extension, "threads.html"), "utf8"), {
     url: `chrome-extension://test-id/threads.html${query}`, runScripts: "outside-only",
   });
   t.after(() => dom.window.close());
-  dom.window.chrome = { runtime: { sendMessage } };
+  dom.window.chrome = { runtime: { sendMessage }, storage };
   for (const file of ["common.js", "ui.js", "settings.js", "threads.js"]) dom.window.eval(fs.readFileSync(path.join(extension, file), "utf8"));
   return dom;
 }
@@ -165,4 +165,73 @@ test("branch export identifies the query and the workspace branch separately fro
   assert.equal(data.branch, "Feature/foo");
   assert.equal(data.threads[0].branch, "old");
   assert.equal(data.threads[0].matchedBranch, "Feature/foo");
+});
+
+test("browser filters persist, identify unavailable computers, and restore hidden threads without rescanning", async t => {
+  let calls = 0;
+  const writes = [];
+  const storage = { local: { async get() { return { preferences: { computer: "Mini" } }; }, async set(data) { writes.push(data.preferences); } } };
+  const dom = browser(t, async () => {
+    calls++;
+    return { ok: true, environments: [{ name: "This computer", ok: true }, { name: "Mini", ok: false }], threads: [
+      { id: "a", environmentId: "env", title: "Local work" },
+      { id: "b", environmentId: "env", title: "Archived work", computer: "Mini", archived: true },
+    ] };
+  }, undefined, storage);
+  await tick();
+  const document = dom.window.document;
+  assert.equal(document.getElementById("computer").value, "Mini");
+  assert.ok(document.getElementById("computer").selectedOptions[0].textContent.includes("unavailable"));
+  assert.equal(document.querySelectorAll(".thread").length, 1);
+  document.getElementById("includeArchived").checked = false;
+  document.getElementById("includeArchived").dispatchEvent(new dom.window.Event("change"));
+  await tick();
+  assert.equal(writes.at(-1).includeArchived, false);
+  assert.equal(document.querySelectorAll(".thread").length, 0);
+  assert.equal(document.getElementById("filter-notice").hidden, false);
+  document.getElementById("search").value = "absent";
+  document.getElementById("search").dispatchEvent(new dom.window.Event("input"));
+  document.getElementById("show-all").click();
+  await tick();
+  assert.equal(document.querySelectorAll(".thread").length, 2);
+  assert.equal(document.getElementById("computer").value, "all");
+  assert.equal(document.getElementById("search").value, "");
+  assert.equal(document.getElementById("filter-notice").hidden, true);
+  assert.equal(calls, 1);
+});
+
+test("saved filters for a removed computer remain visible and can be recovered", async t => {
+  const storage = { local: { async get() { return { preferences: { computer: "Removed computer", liveBranches: false } }; }, async set() {} } };
+  const dom = browser(t, async () => ({ ok: true, threads: [{ id: "a", environmentId: "env", title: "Local work" }] }), undefined, storage);
+  await tick();
+  const document = dom.window.document;
+  assert.equal(document.querySelectorAll(".thread").length, 0);
+  assert.equal(document.getElementById("computer").value, "Removed computer");
+  assert.ok(document.getElementById("computer").selectedOptions[0].textContent.includes("not in this lookup"));
+  document.getElementById("show-all").click();
+  await tick();
+  assert.equal(document.querySelectorAll(".thread").length, 1);
+  assert.equal(dom.window.T3Settings.get().liveBranches, false);
+});
+
+test("failed filter saves restore controls and leave the displayed results intact", async t => {
+  const storage = { local: { async get() { return {}; }, async set() { throw Error("Storage unavailable"); } } };
+  const dom = browser(t, async () => ({ ok: true, threads: [{ id: "a", environmentId: "env", title: "Archived work", archived: true }] }), undefined, storage);
+  await tick();
+  const document = dom.window.document;
+  document.getElementById("includeArchived").checked = false;
+  document.getElementById("includeArchived").dispatchEvent(new dom.window.Event("change"));
+  await tick();
+  assert.equal(document.getElementById("includeArchived").checked, true);
+  assert.equal(document.querySelectorAll(".thread").length, 1);
+  assert.ok(document.getElementById("settings-error").textContent.includes("Could not save"));
+});
+
+test("search finds a current workspace branch when the saved branch is stale", async t => {
+  const dom = browser(t, async () => ({ ok: true, threads: [{ id: "a", environmentId: "env", title: "Work", branch: "old", matchedBranch: "feature/current", matchType: "checkout" }] }));
+  await tick();
+  const document = dom.window.document;
+  document.getElementById("search").value = "feature/current";
+  document.getElementById("search").dispatchEvent(new dom.window.Event("input"));
+  assert.equal(document.querySelectorAll(".thread").length, 1);
 });
