@@ -1,0 +1,7 @@
+h2 { font-size: 19px; margin: 28px 0 8px; }
+.computer { border: 1px solid light-dark(#ded5e8, #44394e); border-radius: 8px; padding: 18px; margin: 15px 0; }
+.computer label:not(:first-child) { margin-top: 12px; }
+.computer button { margin-top: 12px; background: transparent; border: 1px solid light-dark(#d5ccdf, #4a4054); color: inherit; }
+.actions { margin-top: 26px; display: flex; gap: 10px; flex-wrap: wrap; }
+#connections ul { padding-left: 20px; } #connections li { margin-top: 8px; overflow-wrap: anywhere; }
+.hint { overflow-wrap: anywhere; }

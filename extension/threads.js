@@ -1,0 +1,127 @@
+let result = null;
+let generation = 0;
+let loadedRepository = null;
+let loadedPullRequest = null;
+let checkedAt = null;
+const repositoryInput = document.getElementById("repository");
+const searchInput = document.getElementById("search");
+
+function parseInput(value) {
+  const clean = value.trim();
+  const pr = T3Pr.parsePullRequest(clean);
+  if (pr) return { repository: pr.repository, pr, url: `https://github.com/${pr.repository}/pull/${pr.number}` };
+  const path = /^https:\/\/github\.com\//i.test(clean) ? T3Pr.repositoryPage(clean)?.repository : clean;
+  return typeof path === "string" && /^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(path) ? { repository: path.toLowerCase(), pr: null } : null;
+}
+
+function shownThreads() {
+  const query = searchInput.value.trim().toLowerCase();
+  return T3Settings.sort(T3Settings.filter(result?.threads || []).filter(thread => !query || [thread.title, thread.branch, thread.project]
+    .some(value => typeof value === "string" && value.toLowerCase().includes(query))), { repository: true });
+}
+
+function render() {
+  const container = document.getElementById("threads");
+  container.replaceChildren();
+  document.getElementById("export").disabled = !result?.ok || !shownThreads().length;
+  if (!result) return;
+  const all = result.threads || [];
+  const threads = shownThreads();
+  document.getElementById("count").textContent = `${threads.length} shown · ${all.length} loaded${result.truncated ? " · More threads exist; results were limited." : ""}`;
+  for (const thread of threads) {
+    const card = T3Ui.element(document, "article", "thread");
+    const row = T3Ui.threadRow(document, thread, { actions: true });
+    if (!row) continue;
+    card.append(row);
+    card.append(T3Ui.element(document, "p", "branch", thread.branch ? `Branch: ${thread.branch}` : "No recorded branch"));
+    if (thread.project) card.append(T3Ui.element(document, "p", "branch", `Project: ${thread.project}`));
+    if (thread.workspace) card.append(T3Ui.element(document, "p", "branch", `${thread.workspaceType === "worktree" ? "Worktree" : "Workspace"}: ${thread.workspace}`));
+    const prs = T3Ui.pullRequestLinks(document, thread);
+    if (prs) card.append(prs);
+    card.append(T3Ui.checkoutControl(document, thread));
+    container.append(card);
+  }
+  if (!threads.length && result.ok) container.append(T3Ui.element(document, "p", "", all.length
+    ? "No threads match your search and display filters." : "No T3 threads found for this repository on the computers checked."));
+}
+
+async function load() {
+  const query = parseInput(repositoryInput.value);
+  const repository = query?.repository;
+  const status = document.getElementById("status");
+  const requestGeneration = ++generation;
+  result = null;
+  render();
+  document.getElementById("count").textContent = "";
+  document.getElementById("coverage").textContent = "";
+  if (!repository) {
+    status.textContent = "Enter owner/repository, a GitHub repository URL, or a GitHub PR URL.";
+    document.getElementById("load").disabled = false;
+    return;
+  }
+  repositoryInput.value = query.pr ? query.url : repository;
+  const label = query.pr ? `${repository} #${query.pr.number}` : repository;
+  status.textContent = `Checking ${label}…`;
+  document.getElementById("page-title").textContent = query.pr ? "PR threads" : "Repository threads";
+  document.getElementById("load").disabled = true;
+  try {
+    await T3Settings.ready;
+    const response = await chrome.runtime.sendMessage(query.pr ? { type: "directLookup", url: query.url } : { type: "repositoryLookup", repository });
+    if (requestGeneration !== generation) return;
+    result = response || { ok: false, error: "No response from the helper." };
+    loadedRepository = repository;
+    loadedPullRequest = query.pr;
+    checkedAt = new Date().toISOString();
+    status.textContent = result.ok ? `Threads for ${label}` : result.error || "Could not read T3 data.";
+    const environments = result.environments || [{ name: "This computer", ok: result.ok }];
+    document.getElementById("coverage").textContent = environments.map(environment => environment.ok
+      ? `${environment.name}: connected` : `${environment.name}: ${environment.error || "unavailable"}`).join(" · ");
+    if (result.lookupWarnings?.length) document.getElementById("coverage").textContent += ` ${result.lookupWarnings.join(" ")}`;
+    render();
+  } catch { if (requestGeneration === generation) status.textContent = "The helper is unavailable. Check the extension connection and try again."; }
+  finally { if (requestGeneration === generation) document.getElementById("load").disabled = false; }
+}
+
+document.getElementById("export").addEventListener("click", () => {
+  if (!result?.ok || !shownThreads().length) return;
+  const data = {
+    repository: loadedRepository, pullRequest: loadedPullRequest?.number || null, checkedAt, search: searchInput.value.trim(),
+    truncated: Boolean(result.truncated), lookupWarnings: result.lookupWarnings || [],
+    computers: (result.environments || [{ name: "This computer", ok: true }]).map(({ name, ok }) => ({ name, available: ok })),
+    threads: shownThreads().map(thread => ({
+      title: thread.title, computer: thread.computer || "This computer", branch: thread.branch || null,
+      project: thread.project || null, archived: Boolean(thread.archived),
+      t3Link: T3Pr.threadUrl(thread.environmentId, thread.id),
+      pullRequests: (thread.pullRequests || []).flatMap(pr => {
+        const parsed = T3Pr.parsePullRequest(`https://github.com/${pr.repository}/pull/${pr.number}`);
+        return parsed ? [`https://github.com/${parsed.repository}/pull/${parsed.number}`] : [];
+      }),
+    })),
+  };
+  try {
+    const blob = new Blob([JSON.stringify(data, null, 2) + "\n"], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${loadedRepository.replace("/", "-")}${loadedPullRequest ? `-pr-${loadedPullRequest.number}` : ""}-t3-links.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    document.getElementById("status").textContent = `Exported ${data.threads.length} shown thread links.`;
+  } catch { document.getElementById("status").textContent = "The export could not be created. Please try again."; }
+});
+
+document.getElementById("lookup").addEventListener("submit", event => { event.preventDefault(); void load(); });
+searchInput.addEventListener("input", render);
+const sortInput = document.getElementById("sort");
+sortInput.addEventListener("change", async () => {
+  try { await T3Settings.update({ sort: sortInput.value }); }
+  catch { document.getElementById("status").textContent = "Could not save the thread order. Try again."; sortInput.value = T3Settings.get().sort; }
+});
+function preferencesChanged() { sortInput.value = T3Settings.get().sort; render(); }
+T3Settings.subscribe(preferencesChanged);
+void T3Settings.ready.then(preferencesChanged);
+const initialParameters = new URL(location.href).searchParams;
+const initial = initialParameters.get("pr") || initialParameters.get("repository");
+if (initial) { repositoryInput.value = initial; void load(); }

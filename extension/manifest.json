@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "T3 PR Links",
+  "version": "1.2.0",
+  "description": "Open linked T3 Code threads from this computer and configured SSH computers directly from GitHub pull requests.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA+kcFOYnGtIB/gfJAjfo/OibH231SBpSHVUYrbGK7fjour7NGe142qQnK5RZ192zKI6DJgttAqnVO6ihXFKgHoK/Gasf+rEoug/mZvgIkIXyDS8oWSJEsvuZuWdNnKp793Q3CNfeKZi/XugAUBbN1Uelr11iY6jFcd/BVX1Uyl9UkM+MM8NaXsTBMNglSn3lwjwC9L6m0ux6mE8r56sRUJpTiVlmQjqLK18vaXPTbEJeGLntwWcMFgUHmxrYqZNc4Y/DYtKOUumr8GTBf3W5XXxhfnCacy0T3P/9xKHwrl0oZkMLHmKoZHYU6WdgBMOtWC4ti5MUm70LBpw2nmPviAwIDAQAB",
+  "permissions": [
+    "nativeMessaging",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "T3 PR Links"
+  },
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+T", "mac": "Alt+Shift+T" },
+      "description": "Show T3 threads for the current page"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://github.com/*"
+      ],
+      "js": [
+        "common.js",
+        "ui.js",
+        "settings.js",
+        "badge.js",
+        "content.js",
+        "list.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}
