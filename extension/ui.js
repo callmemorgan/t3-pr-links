@@ -21,11 +21,11 @@
   function copyButton(document, thread) {
     const href = T3Pr.threadUrl(thread.environmentId, thread.id);
     if (!href) return null;
-    const group = element(document, "span", "t3-pr-copy");
-    const button = element(document, "button", "t3-pr-button", "Copy link");
+    const group = element(document, "span", "t3code-pr-copy");
+    const button = element(document, "button", "t3code-pr-button", "Copy link");
     button.type = "button";
     button.setAttribute("aria-label", `Copy T3 link for ${thread.title || "Untitled thread"}`);
-    const status = element(document, "span", "t3-pr-copy-status");
+    const status = element(document, "span", "t3code-pr-copy-status");
     status.setAttribute("role", "status");
     button.addEventListener("click", async () => {
       button.disabled = true;
@@ -39,7 +39,7 @@
         status.textContent = "Select and copy:";
         let input = group.querySelector("input");
         if (!input) {
-          input = element(document, "input", "t3-pr-copy-value");
+          input = element(document, "input", "t3code-pr-copy-value");
           input.readOnly = true;
           input.value = href;
           input.setAttribute("aria-label", "T3 thread link");
@@ -56,30 +56,30 @@
   function threadRow(document, thread, { single = false, actions = false, badges = true } = {}) {
     const href = T3Pr.threadUrl(thread.environmentId, thread.id);
     if (!href) return null;
-    const row = element(document, "div", "t3-pr-thread-row");
-    const link = element(document, "a", "t3-pr-thread-link", single ? "Open in T3 Code ↗" : `${thread.title || "Untitled thread"} ↗`);
+    const row = element(document, "div", "t3code-pr-thread-row");
+    const link = element(document, "a", "t3code-pr-thread-link", single ? "Open in T3 Code ↗" : `${thread.title || "Untitled thread"} ↗`);
     link.href = href;
     link.title = thread.title || "Open thread in T3 Code";
     row.append(link);
     const computer = ` · ${thread.computer || "This computer"}`;
-    if (single) row.append(element(document, "span", "t3-pr-thread-title", `${thread.title || "Untitled thread"}${computer}`));
-    else row.append(element(document, "span", "t3-pr-thread-title", thread.computer || "This computer"));
+    if (single) row.append(element(document, "span", "t3code-pr-thread-title", `${thread.title || "Untitled thread"}${computer}`));
+    else row.append(element(document, "span", "t3code-pr-thread-title", thread.computer || "This computer"));
     if (["branch", "checkout"].includes(thread.matchType) || (!single && badges)) {
-      const badge = element(document, "span", "t3-pr-match-kind", matchLabel(thread));
+      const badge = element(document, "span", "t3code-pr-match-kind", matchLabel(thread));
       badge.title = matchExplanation(thread);
       row.append(badge);
     }
-    if (thread.archived) row.append(element(document, "span", "t3-pr-match-kind", "Archived"));
+    if (thread.archived) row.append(element(document, "span", "t3code-pr-match-kind", "Archived"));
     if (actions) row.append(copyButton(document, thread));
     return row;
   }
 
   function checkoutControl(document, thread) {
-    const container = element(document, "div", "t3-pr-checkout");
-    const button = element(document, "button", "t3-pr-button", "Check current checkout");
+    const container = element(document, "div", "t3code-pr-checkout");
+    const button = element(document, "button", "t3code-pr-button", "Check current checkout");
     button.type = "button";
     button.setAttribute("aria-label", `Check current checkout for ${thread.title || "Untitled thread"}`);
-    const status = element(document, "span", "t3-pr-checkout-status");
+    const status = element(document, "span", "t3code-pr-checkout-status");
     status.setAttribute("role", "status");
     button.addEventListener("click", async () => {
       button.disabled = true;
@@ -104,7 +104,7 @@
 
   function pullRequestLinks(document, thread) {
     if (!Array.isArray(thread.pullRequests)) return null;
-    const container = element(document, "p", "t3-pr-associated-prs");
+    const container = element(document, "p", "t3code-pr-associated-prs");
     for (const pr of thread.pullRequests.slice(0, 30)) {
       const parsed = T3Pr.parsePullRequest(`https://github.com/${pr.repository}/pull/${pr.number}`);
       if (!parsed) continue;

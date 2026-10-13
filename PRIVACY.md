@@ -22,8 +22,8 @@ Uninstalling the extension removes its Chrome storage. Running `python3 scripts/
 
 ## Changes
 
-Changes to this policy are published in this file in the [GitHub repository](https://github.com/callmemorgan/t3-pr-links).
+Changes to this policy are published in this file in the [GitHub repository](https://github.com/callmemorgan/t3code-pr-links).
 
 ## Contact
 
-Open an issue at https://github.com/callmemorgan/t3-pr-links/issues.
+Open an issue at https://github.com/callmemorgan/t3code-pr-links/issues.

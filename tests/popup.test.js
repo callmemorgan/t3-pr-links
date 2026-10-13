@@ -85,9 +85,9 @@ test("popup groups current-list threads by PR using the shared batch context", a
   });
   await tick();
   assert.equal(dom.window.document.getElementById("status").textContent, "1 linked PR");
-  assert.equal(dom.window.document.querySelectorAll("#threads .t3-pr-thread-link").length, 2);
-  assert.equal(dom.window.document.querySelector(".t3-pr-popup-title").href, "https://github.com/owner/repo/pull/42");
-  assert.equal(dom.window.document.querySelector("#threads .t3-pr-thread-link").href, "t3code://threads/mini/t1");
+  assert.equal(dom.window.document.querySelectorAll("#threads .t3code-pr-thread-link").length, 2);
+  assert.equal(dom.window.document.querySelector(".t3code-pr-popup-title").href, "https://github.com/owner/repo/pull/42");
+  assert.equal(dom.window.document.querySelector("#threads .t3code-pr-thread-link").href, "t3code://threads/mini/t1");
   assert.equal(requests.length, 2);
 });
 
@@ -104,9 +104,9 @@ test("compact popup keeps an explicitly linked thread prominent without a match 
   assert.equal(document.getElementById("details").title, "This computer, Mini");
   branchShortcut(document, { text: "feature/work", repository: "owner/repo", branch: "feature/work",
     href: "chrome-extension://test-id/threads.html?repository=owner%2Frepo&branch=feature%2Fwork" });
-  assert.equal(document.querySelector(".t3-pr-match-kind"), null);
+  assert.equal(document.querySelector(".t3code-pr-match-kind"), null);
   assert.equal(document.querySelector("#threads a").href, "t3code://threads/mini/t1");
-  assert.ok(document.querySelector(".t3-pr-copy button"));
+  assert.ok(document.querySelector(".t3code-pr-copy button"));
 });
 
 test("compact popup still identifies an unavailable computer while retaining available matches", async t => {

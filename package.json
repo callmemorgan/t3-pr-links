@@ -1,11 +1,11 @@
 {
-  "name": "t3-pr-links",
-  "version": "1.5.3",
+  "name": "t3code-pr-links",
+  "version": "1.5.4",
   "private": true,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/callmemorgan/t3-pr-links.git"
+    "url": "https://github.com/callmemorgan/t3code-pr-links.git"
   },
   "description": "Open linked T3 Code threads from GitHub pull requests",
   "scripts": {

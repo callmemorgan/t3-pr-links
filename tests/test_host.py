@@ -158,6 +158,13 @@ class HostTests(unittest.TestCase):
             saved = host.handle_request({"type": "saveConfig", "config": desired}, original)
             self.assertEqual(json.loads(config_path.read_text()), saved["config"])
             self.assertEqual(saved["config"]["sshHosts"][0]["userdata"], "~/.t3/userdata")
+            self.assertNotIn("warning", saved)
+            missing = self.userdata / "missing"
+            moved = host.handle_request({"type": "saveConfig", "config": {**desired, "userdata": str(missing)}}, original)
+            self.assertEqual(json.loads(config_path.read_text())["userdata"], str(missing.resolve()))
+            self.assertIn(f"T3 Code data was not found in {missing.resolve()}", moved["warning"])
+            self.assertIn("Settings", moved["warning"])
+            saved = host.handle_request({"type": "saveConfig", "config": desired}, original)
             remote.assert_not_called()
             for bad in [{"userdata": ""}, {"userdata": str(self.userdata), "sshHosts": [{"host": "-oProxyCommand=evil", "name": "Mini"}]},
                         {"userdata": str(self.userdata), "sshHosts": [{"host": "mini", "name": "This computer"}]}]:

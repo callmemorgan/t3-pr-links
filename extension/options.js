@@ -45,7 +45,7 @@ function showConfig(config) {
 
 async function request(message) {
   const response = await chrome.runtime.sendMessage(message);
-  if (!response?.ok) throw new Error(response?.error || "The local T3 helper is unavailable. Set it up using github.com/callmemorgan/t3-pr-links#install, then try again.");
+  if (!response?.ok) throw new Error(response?.error || "The local T3 helper is unavailable. Set it up using github.com/callmemorgan/t3code-pr-links#install, then try again.");
   return response;
 }
 
@@ -73,7 +73,7 @@ document.getElementById("settings-form").addEventListener("submit", async event 
     const response = await request({ type: "saveConfig", config });
     showConfig(response.config);
     document.getElementById("connections").replaceChildren();
-    status.textContent = "Saved. Refresh a GitHub page to check the updated computers.";
+    status.textContent = response.warning ? `Saved, but ${response.warning}` : "Saved. Refresh a GitHub page to check the updated computers.";
   } catch (error) { status.textContent = error.message; }
   finally { busy = false; updateControls(); }
 });
@@ -93,7 +93,7 @@ document.getElementById("test").addEventListener("click", async () => {
       list.append(T3Ui.element(document, "li", "", `${environment.name}: ${environment.ok ? "connected" : environment.error || "unavailable"}`));
     }
     container.append(list);
-  } catch { status.textContent = "The helper could not be reached. Set it up using github.com/callmemorgan/t3-pr-links#install, then try again."; }
+  } catch { status.textContent = "The helper could not be reached. Set it up using github.com/callmemorgan/t3code-pr-links#install, then try again."; }
   finally { busy = false; updateControls(); }
 });
 void loadConfig();

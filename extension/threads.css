@@ -16,13 +16,13 @@ button:disabled { opacity: .6; cursor: wait; }
 #status { margin-top: 24px; font-weight: 600; } #coverage { opacity: .75; margin-top: 5px; }
 #search { margin-top: 0; } #count, .hint { opacity: .7; }
 .thread { padding: 20px; border: 1px solid light-dark(#ded5e8, #44394e); border-radius: 9px; margin-bottom: 12px; background: light-dark(#fff, #211c29); }
-.t3-pr-thread-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; }
-.t3-pr-thread-link, a { color: light-dark(#6633bc, #c4a7fa); font-weight: 600; overflow-wrap: anywhere; }
-.t3-pr-thread-title, .branch { opacity: .75; overflow-wrap: anywhere; }
-.t3-pr-match-kind { font-size: 11px; border: 1px solid light-dark(#d5ccdf, #4a4054); border-radius: 12px; padding: 1px 7px; }
-.t3-pr-copy { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-.t3-pr-copy button { background: transparent; color: inherit; border: 1px solid light-dark(#d5ccdf, #4a4054); padding: 2px 7px; font-size: 12px; }
-.t3-pr-copy-value { padding: 4px; } .t3-pr-copy-status { font-size: 12px; }
-.t3-pr-checkout { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-.t3-pr-checkout button { background: transparent; color: inherit; border: 1px solid light-dark(#d5ccdf, #4a4054); padding: 4px 8px; font-size: 12px; }
+.t3code-pr-thread-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; }
+.t3code-pr-thread-link, a { color: light-dark(#6633bc, #c4a7fa); font-weight: 600; overflow-wrap: anywhere; }
+.t3code-pr-thread-title, .branch { opacity: .75; overflow-wrap: anywhere; }
+.t3code-pr-match-kind { font-size: 11px; border: 1px solid light-dark(#d5ccdf, #4a4054); border-radius: 12px; padding: 1px 7px; }
+.t3code-pr-copy { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.t3code-pr-copy button { background: transparent; color: inherit; border: 1px solid light-dark(#d5ccdf, #4a4054); padding: 2px 7px; font-size: 12px; }
+.t3code-pr-copy-value { padding: 4px; } .t3code-pr-copy-status { font-size: 12px; }
+.t3code-pr-checkout { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.t3code-pr-checkout button { background: transparent; color: inherit; border: 1px solid light-dark(#d5ccdf, #4a4054); padding: 4px 8px; font-size: 12px; }
 @media (max-width: 500px) { main { margin-top: 24px; } .query { flex-direction: column; } }

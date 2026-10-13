@@ -50,3 +50,16 @@ test("unavailable helper leaves settings disabled and can be retried", async t =
   await tick();
   assert.equal(dom.window.document.getElementById("save").disabled, false);
 });
+
+test("saving a directory without T3 data keeps the settings and shows the warning", async t => {
+  const dom = options(t, async message => message.type === "getConfig"
+    ? { ok: true, config: { userdata: "/data", sshHosts: [] } }
+    : { ok: true, config: message.config, warning: "T3 Code data was not found in /typo." });
+  await tick();
+  const document = dom.window.document;
+  document.getElementById("userdata").value = "/typo";
+  document.getElementById("settings-form").dispatchEvent(new dom.window.Event("submit", { cancelable: true }));
+  await tick();
+  assert.equal(document.getElementById("userdata").value, "/typo");
+  assert.equal(document.getElementById("status").textContent, "Saved, but T3 Code data was not found in /typo.");
+});

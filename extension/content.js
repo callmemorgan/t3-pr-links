@@ -1,5 +1,5 @@
 (() => {
-  const ID = "t3-pr-links";
+  const ID = "t3code-pr-links";
   let currentKey = null;
   let currentQuery = null;
   let generation = 0;
@@ -58,22 +58,22 @@
     signatures.set(panel, signature);
     panel.replaceChildren();
     const mark = document.createElement("span");
-    mark.className = "t3-pr-mark";
+    mark.className = "t3code-pr-mark";
     mark.textContent = "T3";
     panel.append(mark);
-    const body = T3Ui.element(document, "div", "t3-pr-body");
-    const links = T3Ui.element(document, "div", "t3-pr-thread-list");
+    const body = T3Ui.element(document, "div", "t3code-pr-body");
+    const links = T3Ui.element(document, "div", "t3code-pr-thread-list");
     for (const thread of threads) {
       const row = T3Ui.threadRow(document, thread, { single: threads.length === 1 });
       if (row) links.append(row);
       if (["branch", "checkout"].includes(thread.matchType)) {
-        links.append(T3Ui.element(document, "p", "t3-pr-source-branch", `Matching branch: ${thread.matchedBranch || thread.branch}`));
+        links.append(T3Ui.element(document, "p", "t3code-pr-source-branch", `Matching branch: ${thread.matchedBranch || thread.branch}`));
       }
     }
     body.append(links);
     if (hiddenCount) {
-      const notice = T3Ui.element(document, "p", "t3-pr-filter-notice", `${hiddenCount} ${hiddenCount === 1 ? "thread hidden" : "threads hidden"} by your filters. `);
-      const reset = T3Ui.element(document, "button", "t3-pr-button", "Show all threads");
+      const notice = T3Ui.element(document, "p", "t3code-pr-filter-notice", `${hiddenCount} ${hiddenCount === 1 ? "thread hidden" : "threads hidden"} by your filters. `);
+      const reset = T3Ui.element(document, "button", "t3code-pr-button", "Show all threads");
       reset.type = "button";
       reset.addEventListener("click", async () => {
         try { await T3Settings.update({ includeArchived: true, includeBranch: true, computer: "all" }); }
@@ -83,15 +83,15 @@
       body.append(notice);
     }
     if (unavailable.length || !result.ok) {
-      const warning = T3Ui.element(document, "p", "t3-pr-warning", unavailable.length
+      const warning = T3Ui.element(document, "p", "t3code-pr-warning", unavailable.length
         ? `Could not check: ${unavailable.map(environment => environment.name).join(", ")}. Available computers may still have matches.`
         : result.error || "T3 Code data could not be read.");
       warning.setAttribute("role", "status");
       body.append(warning);
     }
-    for (const text of warnings) body.append(T3Ui.element(document, "p", "t3-pr-warning", text));
-    const controls = T3Ui.element(document, "div", "t3-pr-controls");
-    const refresh = T3Ui.element(document, "button", "t3-pr-button", "Refresh");
+    for (const text of warnings) body.append(T3Ui.element(document, "p", "t3code-pr-warning", text));
+    const controls = T3Ui.element(document, "div", "t3code-pr-controls");
+    const refresh = T3Ui.element(document, "button", "t3code-pr-button", "Refresh");
     refresh.type = "button";
     refresh.dataset.action = "refresh";
     refresh.disabled = inFlight;

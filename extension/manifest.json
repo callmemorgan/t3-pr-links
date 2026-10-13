@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "T3Code PR Links",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Open linked T3 Code threads from this computer and configured SSH computers directly from GitHub pull requests.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0eTemJykeW7LQGIrGnq3Ant6ZEAJRy/YqnPjeVVg/ZvSFhlSTOzxOEPIV5qDyebfqgXXCwds8pc4SwRFz7ac6P+aUcVYZenYOigy82UJsl8/BMaYLs5olWTMrseHCiA7BFogobBM28fV54dpgPdivptV32BwLq/TmxukIKeTQmAgA21BCnwJFAHuWKDrgPdRWmldjvp68KUDjjRL77c/PnxUFwXEDlBkWLtPru3uzLTHRpAiIEO1IGy5k6MaA1Sig5ZfC5i44DCKUavusmhfKIvQvRNc6xm6muv+aax6DBrgoOfICVk4/6UqLFHYhMTiv4mKMGCXvvkaOwvd75EF3wIDAQAB",
   "permissions": [

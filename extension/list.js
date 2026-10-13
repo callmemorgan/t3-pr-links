@@ -1,5 +1,5 @@
 (() => {
-  const BADGE = "t3-pr-list-badge";
+  const BADGE = "t3code-pr-list-badge";
   let signature = null;
   let version = 0;
   let result = null;
@@ -51,7 +51,7 @@
       } else {
         badge = T3Ui.element(document, "details", BADGE);
         badge.append(T3Ui.element(document, "summary", "", `T3 · ${threads.length}`));
-        const menu = T3Ui.element(document, "div", "t3-pr-list-menu");
+        const menu = T3Ui.element(document, "div", "t3code-pr-list-menu");
         for (const thread of threads) {
           const row = T3Ui.threadRow(document, thread);
           if (row) menu.append(row);

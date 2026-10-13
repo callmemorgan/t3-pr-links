@@ -20,7 +20,7 @@ test("PR list batches lookup and adds a direct thread link only beside matching 
   const requests = [];
   const dom = list(t, async message => { requests.push(message); return { ok: true, matches: { "owner/repo#42": [{ ...thread, branch: "private/branch" }], "owner/repo#43": [] } }; });
   await tick();
-  const badges = dom.window.document.querySelectorAll(".t3-pr-list-badge");
+  const badges = dom.window.document.querySelectorAll(".t3code-pr-list-badge");
   assert.equal(dom.window.document.querySelector("main").outerHTML.includes("private/branch"), false);
   assert.equal(badges.length, 1);
   assert.equal(badges[0].href, "t3code://threads/mini/t1");
@@ -29,13 +29,13 @@ test("PR list batches lookup and adds a direct thread link only beside matching 
   assert.equal(requests[0].urls.length, 2);
   await new Promise(resolve => setTimeout(resolve, 150));
   assert.equal(requests.length, 1);
-  assert.equal(dom.window.document.querySelector(".t3-pr-list-badge"), badges[0]);
+  assert.equal(dom.window.document.querySelector(".t3code-pr-list-badge"), badges[0]);
 });
 
 test("multiple threads are individually accessible in a PR list menu", async t => {
   const dom = list(t, async () => ({ ok: true, matches: { "owner/repo#42": [thread, { ...thread, id: "t2", title: "Second thread" }] } }));
   await tick();
-  const badge = dom.window.document.querySelector("details.t3-pr-list-badge");
+  const badge = dom.window.document.querySelector("details.t3code-pr-list-badge");
   badge.querySelector("summary").click();
   assert.equal(badge.open, true);
   assert.equal(badge.querySelectorAll("a").length, 2);
@@ -50,7 +50,7 @@ test("old batch results cannot add badges after navigation to a PR detail page",
   dom.window.dispatchEvent(new dom.window.Event("focus"));
   resolve({ ok: true, matches: { "owner/repo#42": [thread] } });
   await tick();
-  assert.equal(dom.window.document.querySelector(".t3-pr-list-badge"), null);
+  assert.equal(dom.window.document.querySelector(".t3code-pr-list-badge"), null);
 });
 
 test("disabling list badges removes them immediately and re-enabling reuses cached matches", async t => {
@@ -59,10 +59,10 @@ test("disabling list badges removes them immediately and re-enabling reuses cach
   await tick();
   await dom.window.T3Settings.update({ listBadges: false });
   await tick();
-  assert.equal(dom.window.document.querySelector(".t3-pr-list-badge"), null);
+  assert.equal(dom.window.document.querySelector(".t3code-pr-list-badge"), null);
   await dom.window.T3Settings.update({ listBadges: true });
   await tick();
-  assert.ok(dom.window.document.querySelector(".t3-pr-list-badge"));
+  assert.ok(dom.window.document.querySelector(".t3code-pr-list-badge"));
   assert.equal(calls, 1);
 });
 
@@ -91,11 +91,11 @@ test("replaced rows immediately before a batch reply trigger a fresh lookup", as
   dom.window.document.querySelector("h3 a").href = "/owner/repo/pull/44";
   pending[0].resolve({ ok: true, matches: { "owner/repo#42": [thread] } });
   await tick();
-  assert.equal(dom.window.document.querySelector(".t3-pr-list-badge"), null);
+  assert.equal(dom.window.document.querySelector(".t3code-pr-list-badge"), null);
   assert.equal(pending.length, 2);
   pending[1].resolve({ ok: true, matches: { "owner/repo#44": [thread] } });
   await tick();
-  assert.equal(dom.window.document.querySelector(".t3-pr-list-badge").previousElementSibling.href, "https://github.com/owner/repo/pull/44");
+  assert.equal(dom.window.document.querySelector(".t3code-pr-list-badge").previousElementSibling.href, "https://github.com/owner/repo/pull/44");
 });
 
 test("returning to an old PR list reuses its batch until popup Refresh or the visible PRs change", async t => {
@@ -129,7 +129,7 @@ test("duplicate rows use canonical PR queries and produce one popup group per PR
   assert.deepEqual(Array.from(requests[0].urls), ["https://github.com/owner/repo/pull/42", "https://github.com/owner/repo/pull/43"]);
   const context = await new Promise(done => handler({ type: "listContext" }, { id: "test-id", url: "chrome-extension://test-id/popup.html" }, done));
   assert.equal(context.pullRequests.length, 1);
-  assert.equal(dom.window.document.querySelectorAll(".t3-pr-list-badge").length, 2);
+  assert.equal(dom.window.document.querySelectorAll(".t3code-pr-list-badge").length, 2);
   assert.equal(requests.length, 1);
 });
 

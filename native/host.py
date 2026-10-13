@@ -206,16 +206,21 @@ def thread_rows(connection):
         raise ValueError("This database has no supported T3 Code thread table.")
 
 
-def read_threads(userdata, key=None, head=None, include_keys=False, repository=None, identity=None, live_branches=True, diagnostics=None):
-    userdata = Path(userdata).expanduser().resolve()
+def find_database(userdata):
     database = userdata / "statev2.sqlite"
     if not database.exists():
         database = userdata / "state.sqlite"
     if not database.is_file():
-        raise ValueError("T3 Code data was not found. Open T3 Code or configure --userdata when installing.")
+        raise ValueError(f"T3 Code data was not found in {userdata}. Open T3 Code once, or set the T3 data directory in the extension's Settings.")
+    if not (userdata / "environment-id").is_file():
+        raise ValueError(f"T3 Code environment-id was not found in {userdata}. Open T3 Code once, then try again.")
+    return database
+
+
+def read_threads(userdata, key=None, head=None, include_keys=False, repository=None, identity=None, live_branches=True, diagnostics=None):
+    userdata = Path(userdata).expanduser().resolve()
+    database = find_database(userdata)
     identity_path = userdata / "environment-id"
-    if not identity_path.is_file():
-        raise ValueError("T3 Code environment-id was not found beside the database.")
     environment_id = identity_path.read_text().strip()
     if not environment_id or len(environment_id) > 256:
         raise ValueError("T3 Code environment-id is invalid.")
@@ -449,7 +454,7 @@ def read_remote(request, remote):
     remote_config = {"userdata": remote.get("userdata", "~/.t3/userdata")}
     program = (
         "import json\n"
-        "namespace = {'__name__': 't3_pr_remote', '__file__': 't3-pr-links-remote.py'}\n"
+        "namespace = {'__name__': 't3_pr_remote', '__file__': 't3code-pr-links-remote.py'}\n"
         f"exec({source!r}, namespace)\n"
         "try:\n"
         f"    result = namespace['handle_local_request']({request!r}, {remote_config!r})\n"
@@ -487,7 +492,13 @@ def handle_request(request, config):
     if request["type"] == "getConfig":
         return {"ok": True, "config": normalized_config(config)}
     if request["type"] == "saveConfig":
-        return {"ok": True, "config": save_config(request["config"])}
+        saved = save_config(request["config"])
+        # Save anyway: T3 may live only on the SSH computers, or not have been opened here yet.
+        try:
+            find_database(Path(saved["userdata"]))
+        except ValueError as error:
+            return {"ok": True, "config": saved, "warning": str(error)}
+        return {"ok": True, "config": saved}
     remotes = config.get("sshHosts", [])
     if not remotes:
         return handle_local_request(request, config)

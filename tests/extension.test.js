@@ -36,7 +36,7 @@ const response = { ok: true, threads: [{ id: "thread-1", environmentId: "env-1",
 test("adds a native link and treats thread titles as text", async t => {
   const dom = fixture(t, async () => response);
   await tick();
-  const panel = dom.window.document.getElementById("t3-pr-links");
+  const panel = dom.window.document.getElementById("t3code-pr-links");
   assert.equal(panel.previousElementSibling.id, "partial-discussion-header");
   assert.equal(panel.querySelector("a").getAttribute("href"), "t3code://threads/env-1/thread-1");
   assert.equal(panel.querySelector("img"), null);
@@ -44,25 +44,25 @@ test("adds a native link and treats thread titles as text", async t => {
   const link = panel.querySelector("a");
   dom.window.dispatchEvent(new dom.window.Event("focus"));
   await tick();
-  assert.equal(dom.window.document.querySelector("#t3-pr-links a"), link);
+  assert.equal(dom.window.document.querySelector("#t3code-pr-links a"), link);
 });
 
 test("shows all matched threads and stays quiet on unmatched PRs", async t => {
   let data = { ok: true, threads: [...response.threads, { id: "second", environmentId: "env-2", title: "Second thread" }] };
   const dom = fixture(t, async () => data);
   await tick();
-  assert.equal(dom.window.document.querySelectorAll("#t3-pr-links a").length, 2);
+  assert.equal(dom.window.document.querySelectorAll("#t3code-pr-links a").length, 2);
   data = { ok: true, threads: [] };
   dom.window.document.querySelector('[data-action="refresh"]').click();
   await tick();
-  assert.equal(dom.window.document.getElementById("t3-pr-links"), null);
+  assert.equal(dom.window.document.getElementById("t3code-pr-links"), null);
 });
 
 test("remote match opens its own environment and identifies its computer", async t => {
   const dom = fixture(t, async () => ({ ok: true, threads: [{ id: "mini-thread", environmentId: "mini-env", title: "Mini work", computer: "Mac Mini" }] }));
   await tick();
-  assert.equal(dom.window.document.querySelector("#t3-pr-links a").getAttribute("href"), "t3code://threads/mini-env/mini-thread");
-  assert.ok(dom.window.document.getElementById("t3-pr-links").textContent.includes("Mac Mini"));
+  assert.equal(dom.window.document.querySelector("#t3code-pr-links a").getAttribute("href"), "t3code://threads/mini-env/mini-thread");
+  assert.ok(dom.window.document.getElementById("t3code-pr-links").textContent.includes("Mac Mini"));
 });
 
 test("renders in GitHub's React PR header and ignores dialog headings and sticky duplicates", async t => {
@@ -74,7 +74,7 @@ test("renders in GitHub's React PR header and ignores dialog headings and sticky
     </div><div data-component="PageHeader"><h2>Sticky PR title</h2></div></main>
   `);
   await tick();
-  const panel = dom.window.document.getElementById("t3-pr-links");
+  const panel = dom.window.document.getElementById("t3code-pr-links");
   assert.ok(panel);
   assert.ok(panel.previousElementSibling.hasAttribute("data-has-nav"));
   assert.equal(panel.closest("dialog"), null);
@@ -83,7 +83,7 @@ test("renders in GitHub's React PR header and ignores dialog headings and sticky
 test("supports a PageHeader without a navigation marker", async t => {
   const dom = fixture(t, async () => response, '<main><div data-component="PageHeader"><h1 data-component="PH_Title">PR title</h1></div></main>');
   await tick();
-  assert.ok(dom.window.document.querySelector("#t3-pr-links a"));
+  assert.ok(dom.window.document.querySelector("#t3code-pr-links a"));
 });
 
 test("PR branch lookup reads the head repository including forks and excludes comment links", async t => {
@@ -97,7 +97,7 @@ test("PR branch lookup reads the head repository including forks and excludes co
   await tick();
   assert.equal(query.head.repository, "fork/repo");
   assert.equal(query.head.branch, "Feature/foo");
-  assert.ok(dom.window.document.getElementById("t3-pr-links").textContent.includes("Branch match"));
+  assert.ok(dom.window.document.getElementById("t3code-pr-links").textContent.includes("Branch match"));
   assert.equal(headBranch(new JSDOM('<article><a href="/owner/repo/tree/main">main</a></article>').window.document), null);
 });
 
@@ -107,18 +107,18 @@ test("manual refresh recovers from an offline computer", async t => {
   const dom = fixture(t, async () => { calls++; return data; });
   await tick();
   const document = dom.window.document;
-  assert.ok(document.querySelector("#t3-pr-links").textContent.includes("Could not check: Mac Mini"));
+  assert.ok(document.querySelector("#t3code-pr-links").textContent.includes("Could not check: Mac Mini"));
   data = { ...response, environments: [{ name: "Mac Mini", ok: true }] };
   document.querySelector('[data-action="refresh"]').click();
   await tick();
   assert.equal(calls, 2);
-  assert.equal(document.querySelector(".t3-pr-warning"), null);
+  assert.equal(document.querySelector(".t3code-pr-warning"), null);
 });
 
 test("connection errors remain visible even without matching threads", async t => {
   const dom = fixture(t, async () => ({ ok: false, error: "Local helper unavailable" }));
   await tick();
-  assert.ok(dom.window.document.getElementById("t3-pr-links").textContent.includes("Local helper unavailable"));
+  assert.ok(dom.window.document.getElementById("t3code-pr-links").textContent.includes("Local helper unavailable"));
   assert.ok(dom.window.document.querySelector('[data-action="refresh"]'));
 });
 
@@ -153,14 +153,14 @@ test("drops stale responses after GitHub navigates to a different PR", async t =
   assert.equal(pending.length, 2);
   pending[0].resolve(response);
   await tick();
-  assert.equal(dom.window.document.getElementById("t3-pr-links"), null);
+  assert.equal(dom.window.document.getElementById("t3code-pr-links"), null);
   pending[1].resolve({ ok: true, threads: [{ id: "other", environmentId: "env-1", title: "Other PR" }] });
   await tick();
-  assert.equal(dom.window.document.querySelector("#t3-pr-links a").getAttribute("href"), "t3code://threads/env-1/other");
+  assert.equal(dom.window.document.querySelector("#t3code-pr-links a").getAttribute("href"), "t3code://threads/env-1/other");
   dom.window.history.pushState({}, "", "/other/repo/issues/99");
   dom.window.dispatchEvent(new dom.window.Event("focus"));
   await tick();
-  assert.equal(dom.window.document.getElementById("t3-pr-links"), null);
+  assert.equal(dom.window.document.getElementById("t3code-pr-links"), null);
 });
 
 test("restores panel when GitHub replaces its header without refetching", async t => {
@@ -169,7 +169,7 @@ test("restores panel when GitHub replaces its header without refetching", async 
   await tick();
   dom.window.document.querySelector("main").innerHTML = '<div class="gh-header">Replacement header</div>';
   await new Promise(resolve => setTimeout(resolve, 150));
-  assert.ok(dom.window.document.querySelector("#t3-pr-links a"));
+  assert.ok(dom.window.document.querySelector("#t3code-pr-links a"));
   assert.equal(calls, 1);
 });
 
@@ -180,7 +180,7 @@ test("navigation immediately before a reply cannot render the previous PR's link
   dom.window.history.pushState({}, "", "/owner/repo/pull/43");
   pending[0](response);
   await tick();
-  assert.equal(dom.window.document.getElementById("t3-pr-links"), null);
+  assert.equal(dom.window.document.getElementById("t3code-pr-links"), null);
   assert.equal(pending.length, 2);
   pending[1]({ ok: true, threads: [] });
   await tick();
@@ -239,7 +239,7 @@ test("navigating from a PR to a branch replaces the context and requests a branc
   await tick();
   assert.equal(requests.at(-1).type, "branchLookup");
   assert.equal(requests.at(-1).branch, "Feature/foo");
-  assert.equal(dom.window.document.querySelector("main").firstElementChild.id, "t3-pr-links");
+  assert.equal(dom.window.document.querySelector("main").firstElementChild.id, "t3code-pr-links");
 });
 
 test("branch hydration immediately before a PR reply discards old branch matches", async t => {
@@ -250,7 +250,7 @@ test("branch hydration immediately before a PR reply discards old branch matches
   dom.window.document.querySelectorAll(".commit-ref")[1].href = "/owner/repo/tree/new";
   pending[0].resolve(response);
   await tick();
-  assert.equal(dom.window.document.querySelector("#t3-pr-links"), null);
+  assert.equal(dom.window.document.querySelector("#t3code-pr-links"), null);
   assert.equal(pending[1].message.head.branch, "new");
   pending[1].resolve({ ok: true, threads: [] });
   await tick();
@@ -262,11 +262,11 @@ test("filtered PR matches remain discoverable and can be restored without anothe
   await tick();
   await dom.window.T3Settings.update({ includeArchived: false });
   const document = dom.window.document;
-  assert.equal(document.querySelector("#t3-pr-links a"), null);
-  assert.ok(document.querySelector(".t3-pr-filter-notice").textContent.includes("1 thread hidden"));
-  document.querySelector(".t3-pr-filter-notice button").click();
+  assert.equal(document.querySelector("#t3code-pr-links a"), null);
+  assert.ok(document.querySelector(".t3code-pr-filter-notice").textContent.includes("1 thread hidden"));
+  document.querySelector(".t3code-pr-filter-notice button").click();
   await tick();
-  assert.ok(document.querySelector("#t3-pr-links a"));
+  assert.ok(document.querySelector("#t3code-pr-links a"));
   assert.equal(calls, 1);
 });
 
@@ -275,19 +275,19 @@ test("copy links encode IDs and offer a selected field when the clipboard is una
   await tick();
   const document = dom.window.document;
   document.body.append(dom.window.T3Ui.copyButton(document, { id: "thread/one", environmentId: "env?one", title: "Copy me" }));
-  document.querySelector(".t3-pr-copy button").click();
+  document.querySelector(".t3code-pr-copy button").click();
   await tick();
-  const input = document.querySelector(".t3-pr-copy-value");
+  const input = document.querySelector(".t3code-pr-copy-value");
   assert.equal(input.value, "t3code://threads/env%3Fone/thread%2Fone");
   assert.equal(input.readOnly, true);
   assert.equal(input.selectionEnd, input.value.length);
   const writes = [];
   Object.defineProperty(dom.window.navigator, "clipboard", { value: { async writeText(text) { writes.push(text); } } });
-  document.querySelector(".t3-pr-copy button").click();
+  document.querySelector(".t3code-pr-copy button").click();
   await tick();
   assert.equal(writes[0], input.value);
-  assert.equal(document.querySelector(".t3-pr-copy-value"), null);
-  assert.equal(document.querySelector(".t3-pr-copy-status").textContent, "Copied");
+  assert.equal(document.querySelector(".t3code-pr-copy-value"), null);
+  assert.equal(document.querySelector(".t3code-pr-copy-status").textContent, "Copied");
 });
 
 test("PR panel stays compact while associated PR links remain available to the thread browser", async t => {
@@ -296,17 +296,17 @@ test("PR panel stays compact while associated PR links remain available to the t
   const dom = fixture(t, async () => ({ ok: true, threads: [thread] }));
   await tick();
   const document = dom.window.document;
-  const panel = document.getElementById("t3-pr-links");
+  const panel = document.getElementById("t3code-pr-links");
   assert.equal(panel.querySelector("details"), null);
-  assert.equal(panel.querySelector(".t3-pr-checkout"), null);
+  assert.equal(panel.querySelector(".t3code-pr-checkout"), null);
   assert.equal(panel.textContent.includes(thread.workspace), false);
   assert.equal(panel.textContent.includes("Project"), false);
   for (const unrendered of ["Project", "worktree", "evil/repo/extra"]) assert.equal(panel.outerHTML.includes(unrendered), false);
   document.body.append(dom.window.T3Ui.pullRequestLinks(document, thread));
-  assert.equal(document.querySelectorAll(".t3-pr-associated-prs a").length, 2);
-  assert.equal(document.querySelector(".t3-pr-associated-prs a").href, "https://github.com/owner/repo/pull/42");
-  assert.equal(document.querySelector(".t3-pr-associated-prs a").rel, "noopener");
-  assert.equal(document.querySelector("#t3-pr-links img"), null);
+  assert.equal(document.querySelectorAll(".t3code-pr-associated-prs a").length, 2);
+  assert.equal(document.querySelector(".t3code-pr-associated-prs a").href, "https://github.com/owner/repo/pull/42");
+  assert.equal(document.querySelector(".t3code-pr-associated-prs a").rel, "noopener");
+  assert.equal(document.querySelector("#t3code-pr-links img"), null);
 });
 
 test("current checkout is queried only when clicked and reports recorded-branch differences", async t => {
@@ -318,11 +318,11 @@ test("current checkout is queried only when clicked and reports recorded-branch 
   await tick();
   assert.equal(requests.length, 1);
   dom.window.document.body.append(dom.window.T3Ui.checkoutControl(dom.window.document, response.threads[0]));
-  dom.window.document.querySelector(".t3-pr-checkout button").click();
+  dom.window.document.querySelector(".t3code-pr-checkout button").click();
   await tick();
   assert.equal(requests[1].type, "checkoutLookup");
   assert.equal(requests[1].threadId, "thread-1");
-  assert.ok(dom.window.document.querySelector(".t3-pr-checkout-status").textContent.includes("Differs from the recorded branch"));
+  assert.ok(dom.window.document.querySelector(".t3code-pr-checkout-status").textContent.includes("Differs from the recorded branch"));
 });
 
 test("live workspace preferences requery while incomplete scans remain visible without matches", async t => {
@@ -332,7 +332,7 @@ test("live workspace preferences requery while incomplete scans remain visible w
     return { ok: true, threads: [], lookupWarnings: ["Workspace scan was incomplete"] };
   });
   await tick();
-  assert.ok(dom.window.document.querySelector(".t3-pr-warning").textContent.includes("incomplete"));
+  assert.ok(dom.window.document.querySelector(".t3code-pr-warning").textContent.includes("incomplete"));
   await dom.window.T3Settings.update({ liveBranches: false });
   await tick();
   assert.equal(requests.length, 2);
@@ -342,8 +342,8 @@ test("live workspace preferences requery while incomplete scans remain visible w
 test("workspace matches show the observed source branch rather than a stale recorded branch", async t => {
   const dom = fixture(t, async () => ({ ok: true, threads: [{ ...response.threads[0], matchType: "checkout", branch: "old-branch", matchedBranch: "feature/current" }] }));
   await tick();
-  assert.equal(dom.window.document.querySelector(".t3-pr-source-branch").textContent, "Matching branch: feature/current");
-  assert.ok(dom.window.document.querySelector(".t3-pr-match-kind").title.includes("currently checked out"));
+  assert.equal(dom.window.document.querySelector(".t3code-pr-source-branch").textContent, "Matching branch: feature/current");
+  assert.ok(dom.window.document.querySelector(".t3code-pr-match-kind").title.includes("currently checked out"));
 });
 
 test("returning to an old PR reuses matches until manual refresh or navigation", async t => {

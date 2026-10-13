@@ -11,8 +11,8 @@ Requires Google Chrome, T3 Code, Python 3.9 or newer, and Git on macOS or Linux.
 The extension has two parts: the Chrome extension, and a small local helper that reads T3 Code's data for it. Chrome extensions can't read local files, and the Chrome Web Store can't install the helper, so you set that part up once from a terminal:
 
 ```sh
-git clone https://github.com/callmemorgan/t3-pr-links.git
-cd t3-pr-links
+git clone https://github.com/callmemorgan/t3code-pr-links.git
+cd t3code-pr-links
 python3 scripts/install.py
 ```
 
@@ -110,7 +110,7 @@ npm ci
 npm test
 ```
 
-To release, bump the version in `extension/manifest.json`, `package.json` and `package-lock.json`, then run `npm run package`. It writes `dist/t3-pr-links-<version>.zip` without the manifest `key`, ready to upload in the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole).
+To release, bump the version in `extension/manifest.json`, `package.json` and `package-lock.json`, then run `npm run package`. It writes `dist/t3code-pr-links-<version>.zip` without the manifest `key`, ready to upload in the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole).
 
 Tests cover exact matching across projects, unlinking, archived/deleted threads, V1 compatibility, read-only SQLite access and live WAL changes, native message framing, SSH aggregation, GitHub navigation and stale-response guards, fork/source branch handling, saved filters, manual refresh caching, lookup limits, safe rendering, the background message boundary, and installer config preservation. The extension itself has no build step or runtime dependencies.
 
@@ -149,6 +149,8 @@ Version 1.5.0 makes the popup’s branch name a shortcut to an exact branch look
 Version 1.5.1 fixes the extension message boundary so Settings, the thread browser, the branch shortcut, checkout checks, and saved-connection checks reach the helper when those pages open in a tab. The branch shortcut now appears whenever the PR’s source branch is known, keeps exact branch names, uses the standard link colour, and has one consistent tooltip. Unattended SSH lookups disable agent, X11, and port forwarding; render state no longer leaves lookup data in the GitHub page; the preview adds `/popup.html?fork=1`.
 
 Version 1.5.3 names the extension T3Code PR Links and uses the Chrome Web Store item's public key, so the unpacked extension and helper installer use the store ID. If you installed an earlier development version, pull the latest code, rerun `python3 scripts/install.py`, and reload the unpacked extension and GitHub tabs.
+
+Version 1.5.4 finishes the rename: the repository is now `callmemorgan/t3code-pr-links`, and the helper is registered as `com.callmemorgan.t3code_pr_links` instead of `codes.t3.pr_links`. Pull the latest code, rerun `python3 scripts/install.py`, and reload GitHub tabs; the installer keeps your saved data directory and SSH computers and removes the old helper. Settings now warns when the saved T3 data directory has no T3 Code data, and that error points to Settings instead of the installer.
 
 ### Verification and review handoff
 

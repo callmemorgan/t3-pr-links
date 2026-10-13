@@ -1,6 +1,6 @@
 importScripts("common.js");
 
-const HOST = "codes.t3.pr_links";
+const HOST = "com.callmemorgan.t3code_pr_links";
 
 // Settings (open_in_tab) and the thread browser run in tabs, so Chrome sets
 // sender.tab for them as well as for content scripts; it cannot tell them apart.
@@ -25,7 +25,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!supported) return false;
     const noun = message.kind === "list" ? "linked PRs" : "matching threads";
     const text = message.problem ? "!" : message.count ? String(message.count) : "";
-    const title = message.kind === "none" ? "T3 PR Links" : `T3 PR Links: ${message.count} ${noun}${message.problem ? " · Lookup incomplete" : ""}`;
+    const title = message.kind === "none" ? "T3Code PR Links" : `T3Code PR Links: ${message.count} ${noun}${message.problem ? " · Lookup incomplete" : ""}`;
     Promise.all([
       chrome.action.setBadgeText({ tabId: sender.tab.id, text }),
       chrome.action.setBadgeBackgroundColor({ tabId: sender.tab.id, color: message.problem ? "#9a6700" : "#6838d9" }),
@@ -89,7 +89,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   chrome.runtime.sendNativeMessage(HOST, request).then(
     (result) => sendResponse(result),
-    () => sendResponse({ ok: false, error: "The local T3 helper is not installed or could not start. Set it up using github.com/callmemorgan/t3-pr-links#install, then retry." }),
+    () => sendResponse({ ok: false, error: "The local T3 helper is not installed or could not start. Set it up using github.com/callmemorgan/t3code-pr-links#install, then retry." }),
   );
   return true;
 });

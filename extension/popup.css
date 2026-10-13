@@ -18,16 +18,16 @@ a:focus-visible, button:focus-visible, summary:focus-visible, select:focus-visib
 #context-title { display: block; font-size: 11px; font-weight: 500; color: light-dark(#71677b, #aca0b8); overflow-wrap: anywhere; }
 #context-branch { margin: 3px 0 0; overflow-wrap: anywhere; font-size: 10px; color: light-dark(#877c91, #9689a3); }
 #threads { display: grid; gap: 12px; margin-top: 12px; max-height: 270px; overflow-y: auto; }
-.t3-pr-thread-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
-.t3-pr-thread-link { flex-basis: 100%; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
-.t3-pr-thread-title { font-size: 11px; color: light-dark(#77717f, #a199aa); }
-.t3-pr-match-kind { font-size: 9px; padding: 1px 5px; border: 1px solid light-dark(#e0d8e9, #4a4054); border-radius: 4px; color: light-dark(#77717f, #a199aa); }
-.t3-pr-copy { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-left: auto; }
+.t3code-pr-thread-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.t3code-pr-thread-link { flex-basis: 100%; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.t3code-pr-thread-title { font-size: 11px; color: light-dark(#77717f, #a199aa); }
+.t3code-pr-match-kind { font-size: 9px; padding: 1px 5px; border: 1px solid light-dark(#e0d8e9, #4a4054); border-radius: 4px; color: light-dark(#77717f, #a199aa); }
+.t3code-pr-copy { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-left: auto; }
 button { font: inherit; cursor: pointer; }
-.t3-pr-copy button { background: transparent; color: light-dark(#77717f, #a199aa); border: 0; padding: 1px 0; font-size: 10px; }
-.t3-pr-copy button:hover { color: light-dark(#6538bf, #c5a9fa); }
-.t3-pr-copy-value { width: 100%; min-width: 0; font: inherit; padding: 4px; }
-.t3-pr-copy-status { font-size: 10px; }
+.t3code-pr-copy button { background: transparent; color: light-dark(#77717f, #a199aa); border: 0; padding: 1px 0; font-size: 10px; }
+.t3code-pr-copy button:hover { color: light-dark(#6538bf, #c5a9fa); }
+.t3code-pr-copy-value { width: 100%; min-width: 0; font: inherit; padding: 4px; }
+.t3code-pr-copy-status { font-size: 10px; }
 #empty { font-size: 11px; color: light-dark(#77717f, #a199aa); }
 .secondary-link { display: block; margin-top: 12px; padding-top: 10px; border-top: 1px solid light-dark(#e8e3ed, #38313f); font-size: 10px; color: light-dark(#77717f, #a199aa); }
 #filters { margin-bottom: 12px; }
@@ -42,5 +42,5 @@ footer button { background: light-dark(#f5f2f8, #302738); color: light-dark(#653
 footer a { font-size: 11px; color: light-dark(#77717f, #a199aa); }
 #settings-link { margin-left: auto; }
 button:disabled { opacity: .5; cursor: wait; }
-.t3-pr-popup-group + .t3-pr-popup-group { padding-top: 10px; border-top: 1px solid light-dark(#e8e3ed, #38313f); }
-.t3-pr-popup-title { display: block; margin-bottom: 7px; font-size: 10px; color: light-dark(#77717f, #a199aa); }
+.t3code-pr-popup-group + .t3code-pr-popup-group { padding-top: 10px; border-top: 1px solid light-dark(#e8e3ed, #38313f); }
+.t3code-pr-popup-title { display: block; margin-bottom: 7px; font-size: 10px; color: light-dark(#77717f, #a199aa); }

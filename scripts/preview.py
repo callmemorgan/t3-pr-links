@@ -70,7 +70,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
-    with tempfile.TemporaryDirectory(prefix="t3-pr-preview-") as directory:
+    with tempfile.TemporaryDirectory(prefix="t3code-pr-preview-") as directory:
         destination = Path(directory)
         shutil.copytree(ROOT / "extension", destination, dirs_exist_ok=True)
         version = json.loads((ROOT / "extension/manifest.json").read_text())["version"]

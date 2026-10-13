@@ -51,8 +51,8 @@ function showContext(context) {
       const visible = T3Settings.sort(T3Settings.filter(pr.threads));
       if (!visible.length) continue;
       shown++;
-      const group = T3Ui.element(document, "div", "t3-pr-popup-group");
-      const link = T3Ui.element(document, "a", "t3-pr-popup-title", `${pr.repository} #${pr.number}`);
+      const group = T3Ui.element(document, "div", "t3code-pr-popup-group");
+      const link = T3Ui.element(document, "a", "t3code-pr-popup-title", `${pr.repository} #${pr.number}`);
       link.href = pr.url;
       link.target = "_blank";
       link.rel = "noopener";
