@@ -54,6 +54,8 @@ The toolbar popup shows matches and source-branch information for the current PR
 
 PR lists show **T3 ↗** badges beside explicitly linked PRs. A single match opens directly; multiple matches have a menu with a link for each thread. Repository PR lists, GitHub's global PR list, and PR results in issue/search lists are supported. List lookups are batched (up to 100 visible titles), with one read of each configured computer's database. Branch inference is available on PR details, where GitHub exposes the source branch, rather than on list rows.
 
+Duplicate PR rows count once in the lookup and popup groups. PR/branch lookups return up to 100 threads; list lookups return up to 10 per PR and 200 total thread entries. If a row or thread limit omits results, the toolbar shows an amber **!** and the popup explains the incomplete coverage. The same warnings appear on PR/branch panels and in thread-browser exports when applicable.
+
 Branch lookups also work on repository home pages, branch folders, and files. The selected branch comes from GitHub’s branch picker, so file paths are not mistaken for branch names. Tag and commit snapshots are excluded. The toolbar popup follows branch pages too.
 
 The popup’s **Lookup and display filters** lets you include/exclude archived threads or branch matches, select a computer, and turn list badges off. Preferences are saved locally in Chrome and update open GitHub pages immediately. If filters hide all matches, the page offers **Show all threads** so matches do not disappear without explanation. Filters affect display, not which configured computers are checked.
@@ -127,3 +129,5 @@ Version 1.3.0 adds manual branch lookup in the thread browser and fixes manual P
 Version 1.3.1 adds the shared lookup/display filter controls to the thread browser, recovery for hidden results, and search by observed workspace branch.
 
 Version 1.4.0 redesigns the popup as a compact thread launcher and removes periodic polling. New pages and manual Refresh still query the configured computers.
+
+Version 1.4.1 deduplicates PR-list lookup/grouping and reports omitted rows or threads consistently through existing coverage warnings.

@@ -13,8 +13,10 @@
     const found = [];
     for (const link of document.querySelectorAll('main h3 a[href], .js-issue-row a.Link--primary[href], a[data-testid="issue-pr-title-link"][href]')) {
       const pr = T3Pr.parsePullRequest(link.href);
-      if (pr) found.push({ link, pr });
-      if (found.length === 100) break;
+      if (pr) {
+        if (found.length === 100) { found.truncated = true; break; }
+        found.push({ link, pr });
+      }
     }
     return found;
   }
@@ -22,12 +24,13 @@
   function removeBadges() { document.querySelectorAll(`.${BADGE}`).forEach(node => node.remove()); }
   function signatureFor(entries) {
     const keys = [...new Set(entries.map(entry => entry.pr.key))].sort();
-    return keys.length ? JSON.stringify([location.pathname, location.search, keys]) : null;
+    return keys.length ? JSON.stringify([location.pathname, location.search, keys, Boolean(entries.truncated)]) : null;
   }
 
   function render(entries) {
     const count = new Set(entries.filter(({ pr }) => T3Settings.filter(result?.matches?.[pr.key] || []).length).map(({ pr }) => pr.key)).size;
-    if (result) globalThis.T3Badge?.set("list", count, !result.ok || (result.environments || []).some(environment => !environment.ok));
+    if (result) globalThis.T3Badge?.set("list", count, !result.ok || Boolean(result.lookupWarnings?.length)
+      || (result.environments || []).some(environment => !environment.ok));
     for (const { link, pr } of entries) {
       let badge = link.nextElementSibling?.classList.contains(BADGE) ? link.nextElementSibling : null;
       const threads = T3Settings.sort(T3Settings.filter(result?.matches?.[pr.key] || []));
@@ -80,11 +83,13 @@
     const requestSignature = signature;
     pending = true;
     pendingLookup = (async () => { try {
-      const urls = [...new Set(entries.map(entry => entry.link.href))];
+      const urls = [...new Map(entries.map(({ pr }) => [pr.key, `https://github.com/${pr.repository}/pull/${pr.number}`])).values()];
       const response = await chrome.runtime.sendMessage({ type: "batchLookup", urls });
       if (requestVersion !== version || !T3Pr.isPullRequestList(location.href)) return;
       if (signatureFor(targets()) !== requestSignature) return sync(true, forPopup);
       result = response || { ok: false, error: "No response from the helper. Refresh to try again." };
+      if (entries.truncated) result = { ...result, truncated: true, lookupWarnings: [...(result.lookupWarnings || []),
+        "Only the first 100 PR rows were checked. Narrow the GitHub list to check other PRs."] };
       completedAt = Date.now();
       if (T3Settings.get().listBadges) render(targets());
     } catch {
@@ -105,8 +110,8 @@
       if (!T3Pr.isPullRequestList(location.href)) { sendResponse(null); return; }
       const entries = targets();
       sendResponse({ list: { url: location.href }, repository: T3Pr.pageContext(document, location.href).repository,
-        pullRequests: entries.filter(({ pr }) => result?.matches?.[pr.key]?.length).map(({ link, pr }) => ({ ...pr,
-          url: `https://github.com/${pr.repository}/pull/${pr.number}`, title: link.textContent.slice(0, 300), threads: result.matches[pr.key] })),
+        pullRequests: [...new Map(entries.filter(({ pr }) => result?.matches?.[pr.key]?.length).map(({ link, pr }) => [pr.key, { ...pr,
+          url: `https://github.com/${pr.repository}/pull/${pr.number}`, title: link.textContent.slice(0, 300), threads: result.matches[pr.key] }])).values()],
         result, lastChecked: completedAt });
     });
     return true;

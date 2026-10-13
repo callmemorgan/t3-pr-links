@@ -366,6 +366,25 @@ def validate_request(request):
         raise ValueError("Invalid source branch.")
 
 
+def unique_batch_queries(queries):
+    """Count each repository/PR once, including mixed-case duplicate rows."""
+    unique = {}
+    for query in queries:
+        key = (query["repository"].lower(), query["number"])
+        unique.setdefault(key, {"host": "github.com", "repository": key[0], "number": key[1]})
+    return list(unique.values())
+
+
+def result_limit_warning():
+    return "Some matching threads were omitted because the result limit was reached."
+
+
+def limited_threads(threads, limit, diagnostics):
+    truncated = len(threads) > limit
+    return {"ok": True, "threads": threads[:limit], "threadCount": len(threads), "truncated": truncated,
+            "lookupWarnings": branch_warnings(diagnostics) + ([result_limit_warning()] if truncated else [])}
+
+
 def handle_local_request(request, config):
     validate_request(request)
     if request["type"] == "checkoutLookup":
@@ -379,35 +398,37 @@ def handle_local_request(request, config):
         records, _ = read_threads(config["userdata"], include_keys=True)
         matches = {}
         remaining = 200
-        for query in request["queries"]:
+        truncated = False
+        for query in unique_batch_queries(request["queries"]):
             repository, number = query["repository"].lower(), query["number"]
             key = ("github.com", repository, number)
             match_key = f"{repository}#{number}"
             found = [record for record in records if key in record["_prKeys"]]
             found.sort(key=lambda record: record["archived"])
+            truncated = truncated or len(found) > min(10, remaining)
             matches[match_key] = [{field: record[field] for field in ("id", "environmentId", "archived", "matchType")}
                                   | {"title": record["title"][:300], "branch": record["branch"], "updatedAt": record["updatedAt"]}
                                   for record in found[:min(10, remaining)]]
             remaining -= len(matches[match_key])
-        return {"ok": True, "matches": matches}
+        return {"ok": True, "matches": matches, "truncated": truncated,
+                "lookupWarnings": [result_limit_warning()] if truncated else []}
     if request["type"] == "branchLookup":
         diagnostics = {}
         threads, _ = read_threads(config["userdata"], head={"repository": request["repository"], "branch": request["branch"]},
                                   live_branches=request.get("liveBranches", True), diagnostics=diagnostics)
         threads.sort(key=lambda thread: (thread["matchType"] == "checkout", thread["archived"]))
-        return {"ok": True, "threads": threads[:100], "lookupWarnings": branch_warnings(diagnostics)}
+        return limited_threads(threads, 100, diagnostics)
     if request["type"] == "repositoryLookup":
         diagnostics = {}
         threads, _ = read_threads(config["userdata"], repository=request["repository"], diagnostics=diagnostics)
         threads.sort(key=lambda thread: thread["archived"])
-        return {"ok": True, "threads": threads[:200], "threadCount": len(threads), "truncated": len(threads) > 200,
-                "lookupWarnings": branch_warnings(diagnostics)}
+        return limited_threads(threads, 200, diagnostics)
     repository, number = request["repository"], request["number"]
     diagnostics = {}
     threads, _ = read_threads(config["userdata"], ("github.com", repository.lower(), number), request.get("head"),
                               live_branches=request.get("liveBranches", True), diagnostics=diagnostics)
     threads.sort(key=lambda thread: (match_rank(thread), thread["archived"]))
-    return {"ok": True, "threads": threads[:100], "lookupWarnings": branch_warnings(diagnostics)}
+    return limited_threads(threads, 100, diagnostics)
 
 
 def branch_warnings(diagnostics):
@@ -458,6 +479,8 @@ def read_remote(request, remote):
 
 def handle_request(request, config):
     validate_request(request)
+    if request["type"] == "batchLookup":
+        request = {**request, "queries": unique_batch_queries(request["queries"])}
     if request["type"] == "getConfig":
         return {"ok": True, "config": normalized_config(config)}
     if request["type"] == "saveConfig":
@@ -489,6 +512,9 @@ def handle_request(request, config):
     if request["type"] == "batchLookup":
         matches = {}
         remaining = 200
+        truncated = any(response.get("truncated") for _, response in results)
+        warnings = [f"{name}: {warning}" for name, response in results for warning in response.get("lookupWarnings", [])]
+        merge_truncated = False
         for query in request["queries"]:
             key = f"{query['repository'].lower()}#{query['number']}"
             found = {}
@@ -496,9 +522,13 @@ def handle_request(request, config):
                 for thread in response.get("matches", {}).get(key, []):
                     identity = (thread["environmentId"], thread["id"])
                     found.setdefault(identity, {**thread, "computer": name})
+            merge_truncated = merge_truncated or len(found) > min(10, remaining)
             matches[key] = sorted(found.values(), key=lambda thread: thread.get("archived", False))[:min(10, remaining)]
             remaining -= len(matches[key])
-        return {"ok": True, "matches": matches, "environments": environments}
+        if merge_truncated:
+            warnings.append(result_limit_warning())
+        return {"ok": True, "matches": matches, "environments": environments,
+                "truncated": bool(truncated or merge_truncated), "lookupWarnings": warnings}
     threads = {}
     for name, response in results:
         for thread in response.get("threads", []):
@@ -507,6 +537,8 @@ def handle_request(request, config):
     ordered = sorted(threads.values(), key=lambda thread: (match_rank(thread), thread.get("archived", False)))
     warnings = [f"{name}: {warning}" for name, response in results for warning in response.get("lookupWarnings", [])]
     limit = 200 if request["type"] == "repositoryLookup" else 100
+    if len(ordered) > limit:
+        warnings.append(result_limit_warning())
     return {"ok": True, "threads": ordered[:limit], "environments": environments,
             "threadCount": len(ordered), "truncated": len(ordered) > limit or any(response.get("truncated") for _, response in results),
             "lookupWarnings": warnings}

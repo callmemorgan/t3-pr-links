@@ -20,7 +20,8 @@ MOCK = r'''
   ];
   const environments = [{name:"This computer",ok:true},{name:"Mac Mini",ok:true}];
   let config = {userdata:"~/.t3/userdata",sshHosts:[{host:"mac-mini",name:"Mac Mini",userdata:"~/.t3/userdata"}]};
-  const response = {ok:true,threads,environments};
+  const limited = new URL(location.href).searchParams.get("limited") === "1";
+  const response = {ok:true,threads,environments,...(limited ? {truncated:true,lookupWarnings:["Some matching threads were omitted because the result limit was reached."]} : {})};
   window.chrome = {
     runtime:{getURL:path=>new URL(path,location.href).href,getManifest:()=>({version:PREVIEW_VERSION}),async sendMessage(message){
       if(message.type==="getConfig") return {ok:true,config};

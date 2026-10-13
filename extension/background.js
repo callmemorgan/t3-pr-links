@@ -22,7 +22,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!supported) return false;
     const noun = message.kind === "list" ? "linked PRs" : "matching threads";
     const text = message.problem ? "!" : message.count ? String(message.count) : "";
-    const title = message.kind === "none" ? "T3 PR Links" : `T3 PR Links: ${message.count} ${noun}${message.problem ? " · Some computers could not be checked" : ""}`;
+    const title = message.kind === "none" ? "T3 PR Links" : `T3 PR Links: ${message.count} ${noun}${message.problem ? " · Lookup incomplete" : ""}`;
     Promise.all([
       chrome.action.setBadgeText({ tabId: sender.tab.id, text }),
       chrome.action.setBadgeBackgroundColor({ tabId: sender.tab.id, color: message.problem ? "#9a6700" : "#6838d9" }),

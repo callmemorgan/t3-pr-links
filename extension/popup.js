@@ -93,7 +93,7 @@ async function check(force = false) {
     details.textContent = `${available.length} ${available.length === 1 ? "computer" : "computers"} connected`;
     details.title = available.map(environment => environment.name).join(", ");
     if (unavailable.length) details.textContent = unavailable.map(environment => `${environment.name}: ${environment.error || "unavailable"}`).join("; ");
-    if (warnings.length) { status.textContent = "Lookup was incomplete"; details.textContent += ` ${warnings.join(" ")}`; }
+    if (warnings.length) { status.textContent = "Lookup was incomplete"; details.textContent += ` · ${warnings.join(" ")}`; }
   } catch (error) {
     connection.dataset.state = "attention";
     status.textContent = "Connection needs attention";

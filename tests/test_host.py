@@ -360,5 +360,63 @@ class HostTests(unittest.TestCase):
                 with self.assertRaises(ValueError): host.handle_request({"type": "batchLookup", "queries": queries}, config)
                 remote.assert_not_called()
 
+    def test_duplicate_batch_rows_do_not_consume_the_result_budget_or_hide_later_prs(self):
+        for index in range(10):
+            self.add(str(index), {"pullRequests": [link(), link(number=43)]})
+        request = {"type": "batchLookup", "queries": [link("Owner/Repo")] * 99 + [link(number=43)]}
+        result = host.handle_request(request, self.config)
+        self.assertEqual(len(result["matches"]["owner/repo#42"]), 10)
+        self.assertEqual(len(result["matches"]["owner/repo#43"]), 10)
+        self.assertFalse(result["truncated"])
+        self.assertEqual(result["lookupWarnings"], [])
+        self.assertEqual(len(request["queries"]), 100)
+        config = {**self.config, "sshHosts": [{"host": "mini"}]}
+        with patch.object(host, "read_remote", return_value={"ok": True, "matches": {}}) as remote:
+            combined = host.handle_request(request, config)
+        self.assertEqual(len(remote.call_args.args[0]["queries"]), 2)
+        self.assertEqual(len(combined["matches"]["owner/repo#43"]), 10)
+
+    def test_local_pr_and_branch_limits_report_omissions_and_exact_limits_are_complete(self):
+        for index in range(101):
+            self.add(str(index), {"pullRequests": [link()], "branch": "feature", "worktreePath": "/workspace"})
+        pr = self.lookup()
+        self.assertEqual(len(pr["threads"]), 100)
+        self.assertEqual(pr["threadCount"], 101)
+        self.assertTrue(pr["truncated"])
+        self.assertEqual(len(pr["lookupWarnings"]), 1)
+        with patch.object(host, "git_branch_repository", return_value="owner/repo"):
+            branch = host.handle_request({"type": "branchLookup", "host": "github.com", "repository": "owner/repo", "branch": "feature", "liveBranches": False}, self.config)
+        self.assertEqual(len(branch["threads"]), 100)
+        self.assertTrue(branch["truncated"])
+        self.assertEqual(branch["threadCount"], 101)
+        self.db.execute("DELETE FROM orchestration_v2_projection_threads WHERE thread_id = '100'")
+        self.db.commit()
+        exact = self.lookup()
+        self.assertFalse(exact["truncated"])
+        self.assertEqual(exact["lookupWarnings"], [])
+
+    def test_batch_reports_per_pr_and_total_limits(self):
+        for index in range(11):
+            self.add(str(index), {"pullRequests": [link(number=number) for number in range(1, 22)]})
+        result = host.handle_request({"type": "batchLookup", "queries": [link(number=number) for number in range(1, 22)]}, self.config)
+        self.assertEqual(sum(map(len, result["matches"].values())), 200)
+        self.assertEqual(result["matches"]["owner/repo#21"], [])
+        self.assertTrue(result["truncated"])
+        self.assertEqual(len(result["lookupWarnings"]), 1)
+
+    def test_combined_limits_report_omissions_and_preserve_remote_warnings(self):
+        self.add("local", {"pullRequests": [link()]})
+        config = {**self.config, "sshHosts": [{"host": "mini", "name": "Mini"}]}
+        remote = {"ok": True, "threads": [{"id": str(index), "environmentId": "remote", "archived": False, "matchType": "linked"} for index in range(100)]}
+        with patch.object(host, "read_remote", return_value=remote):
+            result = host.handle_request({"type": "lookup", "host": "github.com", "repository": "owner/repo", "number": 42}, config)
+        self.assertEqual(len(result["threads"]), 100)
+        self.assertTrue(result["truncated"])
+        self.assertEqual(len(result["lookupWarnings"]), 1)
+        with patch.object(host, "read_remote", return_value={"ok": True, "matches": {"owner/repo#42": []}, "truncated": True, "lookupWarnings": ["Remote limit reached"]}):
+            batch = host.handle_request({"type": "batchLookup", "queries": [link()]}, config)
+        self.assertTrue(batch["truncated"])
+        self.assertEqual(batch["lookupWarnings"], ["Mini: Remote limit reached"])
+
 
 if __name__ == "__main__": unittest.main()

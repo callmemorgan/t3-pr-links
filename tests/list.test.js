@@ -114,3 +114,35 @@ test("returning to an old PR list reuses its batch until popup Refresh or the vi
   await tick();
   assert.equal(calls, 3);
 });
+
+test("duplicate rows use canonical PR queries and produce one popup group per PR", async t => {
+  let handler;
+  const requests = [];
+  const dom = list(t, async message => { requests.push(message); return { ok: true, matches: { "owner/repo#42": [thread] } }; }, {
+    id: "test-id", getURL: p => `chrome-extension://test-id/${p}`, onMessage: { addListener(fn) { handler = fn; } },
+  });
+  dom.window.document.querySelector("ul").insertAdjacentHTML("beforeend", '<li><h3><a href="/Owner/Repo/pull/42/files">Duplicate PR</a></h3></li>');
+  await tick();
+  assert.equal(requests[0].urls.length, 2);
+  assert.deepEqual(Array.from(requests[0].urls), ["https://github.com/owner/repo/pull/42", "https://github.com/owner/repo/pull/43"]);
+  const context = await new Promise(done => handler({ type: "listContext" }, { id: "test-id", url: "chrome-extension://test-id/popup.html" }, done));
+  assert.equal(context.pullRequests.length, 1);
+  assert.equal(dom.window.document.querySelectorAll(".t3-pr-list-badge").length, 2);
+  assert.equal(requests.length, 1);
+});
+
+test("lists beyond 100 rows report incomplete coverage and flag the toolbar", async t => {
+  let handler;
+  const badges = [];
+  const dom = list(t, async message => ({ ok: true, matches: {} }), {
+    id: "test-id", getURL: p => `chrome-extension://test-id/${p}`, onMessage: { addListener(fn) { handler = fn; } },
+  });
+  const originalSend = dom.window.chrome.runtime.sendMessage;
+  dom.window.chrome.runtime.sendMessage = message => { if (message.type === "badge") badges.push(message); return originalSend(message); };
+  dom.window.document.querySelector("ul").insertAdjacentHTML("beforeend", Array.from({length:99}, (_, index) => `<li><h3><a href="/owner/repo/pull/${index + 44}">PR ${index + 44}</a></h3></li>`).join(""));
+  await tick();
+  const context = await new Promise(done => handler({ type: "listContext" }, { id: "test-id", url: "chrome-extension://test-id/popup.html" }, done));
+  assert.equal(context.result.truncated, true);
+  assert.ok(context.result.lookupWarnings[0].includes("first 100 PR rows"));
+  assert.equal(badges.at(-1).problem, true);
+});
