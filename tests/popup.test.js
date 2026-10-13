@@ -34,6 +34,11 @@ test("popup displays current PR matches and refreshes that page without a second
   assert.equal(document.getElementById("status").textContent, "1 matching thread");
   assert.equal(document.querySelector("#threads a").href, "t3code://threads/mini/t1");
   assert.ok(document.getElementById("context-branch").textContent.includes("fork/repo"));
+  const branchLink = new URL(document.querySelector("#context-branch a").href);
+  assert.equal(branchLink.protocol, "chrome-extension:");
+  assert.equal(branchLink.pathname, "/threads.html");
+  assert.equal(branchLink.searchParams.get("repository"), "fork/repo");
+  assert.equal(branchLink.searchParams.get("branch"), "Feature/foo");
   assert.equal(requests.length, 1);
   document.getElementById("retry").click();
   await tick();
@@ -99,4 +104,18 @@ test("compact popup still identifies an unavailable computer while retaining ava
   assert.equal(document.getElementById("connection").dataset.state, "attention");
   assert.equal(document.getElementById("details").textContent, "Mini: Offline");
   assert.ok(document.querySelector("#threads a"));
+});
+
+test("popup branch shortcut opens an exact branch lookup for the current branch page", async t => {
+  const { dom } = popup(t, {
+    branch: { repository: "owner/repo", branch: "Feature/one&two" },
+    result: { ok: true, threads: [{ id: "a", environmentId: "env", title: "Work", matchType: "branch" }] },
+  });
+  await tick();
+  const link = dom.window.document.querySelector("#context-branch a");
+  assert.equal(link.textContent, "Feature/one&two");
+  assert.equal(new URL(link.href).searchParams.get("branch"), "Feature/one&two");
+  assert.equal(link.rel, "noopener");
+  assert.equal(link.target, "_blank");
+  assert.ok(link.getAttribute("aria-label").includes("owner/repo"));
 });

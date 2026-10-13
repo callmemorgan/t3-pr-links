@@ -17,6 +17,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible, select:focus-visib
 #context { padding: 12px; margin-bottom: 12px; border: 1px solid light-dark(#e8e3ed, #38313f); border-radius: 9px; background: light-dark(#fbfafc, #201c26); }
 #context-title { display: block; font-size: 11px; font-weight: 500; color: light-dark(#71677b, #aca0b8); overflow-wrap: anywhere; }
 #context-branch { margin: 3px 0 0; overflow-wrap: anywhere; font-size: 10px; color: light-dark(#877c91, #9689a3); }
+#context-branch a { color: inherit; } #context-branch a:hover { color: light-dark(#6538bf, #c5a9fa); }
 #threads { display: grid; gap: 12px; margin-top: 12px; max-height: 270px; overflow-y: auto; }
 .t3-pr-thread-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
 .t3-pr-thread-link { flex-basis: 100%; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }

@@ -30,9 +30,18 @@ function showContext(context) {
   title.rel = "noopener";
   const branchHint = document.getElementById("context-branch");
   const inferred = (context.result?.threads || []).some(thread => ["branch", "checkout"].includes(thread.matchType));
-  branchHint.textContent = context.branch ? context.branch.branch : context.head && inferred
-    ? `${context.head.repository !== repository ? `${context.head.repository} · ` : ""}${context.head.branch}` : "";
-  branchHint.hidden = !branchHint.textContent;
+  const branch = context.branch || (inferred ? context.head : null);
+  branchHint.replaceChildren();
+  branchHint.hidden = !branch;
+  if (branch) {
+    const link = T3Ui.element(document, "a", "", `${branch.repository !== repository ? `${branch.repository} · ` : ""}${branch.branch}`);
+    link.href = `${chrome.runtime.getURL("threads.html")}?repository=${encodeURIComponent(branch.repository)}&branch=${encodeURIComponent(branch.branch)}`;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.title = `Find T3 threads for ${branch.branch}`;
+    link.setAttribute("aria-label", `Find T3 threads for branch ${branch.branch} in ${branch.repository}`);
+    branchHint.append(link);
+  }
   document.getElementById("browse").href = `${chrome.runtime.getURL("threads.html")}${repository ? `?repository=${encodeURIComponent(repository)}` : ""}`;
   const allThreads = context.list ? (context.pullRequests || []).flatMap(pr => pr.threads) : context.result?.threads || [];
   const threads = T3Settings.sort(T3Settings.filter(allThreads));
@@ -70,6 +79,7 @@ async function check(force = false) {
   connection.dataset.state = "checking";
   status.textContent = "Checking connections…";
   details.textContent = "";
+  details.title = "";
   try {
     await T3Settings.ready;
     const context = await currentPage(force);

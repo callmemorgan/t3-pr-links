@@ -32,7 +32,10 @@ MOCK = r'''
       if(message.type==="directBranchLookup") return {...response,threads:threads.filter(thread=>thread.branch===message.branch).map(thread=>({...thread,matchType:"branch"}))};
       return response;
     }},
-    tabs:{async query(){return [{id:1}];},async sendMessage(){return {pr:{repository:"example/repository",number:57},head:{repository:"example/repository",branch:"codex/dependency-sources"},result:{...response,threads:[{...threads[0],matchType:"linked"}]}};}},
+    tabs:{async query(){return [{id:1}];},async sendMessage(){
+      if(new URL(location.href).searchParams.get("branch")==="1") return {branch:{repository:"example/repository",branch:"codex/dependency-sources"},result:{...response,threads:[{...threads[0],matchType:"branch"}]}};
+      return {pr:{repository:"example/repository",number:57},head:{repository:"example/repository",branch:"codex/dependency-sources"},result:{...response,threads:[{...threads[0],matchType:"linked"}]}};
+    }},
     storage:{local:{async get(){return {preferences};},async set(data){preferences=data.preferences;listeners.forEach(fn=>fn({preferences:{newValue:preferences}},"local"));}},onChanged:{addListener(fn){listeners.push(fn);}}}
   };
   document.addEventListener("DOMContentLoaded",()=>{

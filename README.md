@@ -40,7 +40,7 @@ To include a connected computer, use its existing SSH alias:
 python3 scripts/install.py --ssh-host mac-mini
 ```
 
-You can manage the local data directory and up to 12 SSH computers from **Computer settings** in the popup, or from Chrome’s extension Options. Each computer has a display name, existing SSH alias, and T3 data directory. **Check saved connections** reports connectivity without changing the form.
+You can manage the local data directory and up to 12 SSH computers from **Settings** in the popup, or from Chrome’s extension Options. Each computer has a display name, existing SSH alias, and T3 data directory. **Check saved connections** reports connectivity without changing the form.
 
 Repeat `--ssh-host` to include more computers. This uses your existing SSH keys and known host records, with no password prompts. The remote computer needs Python 3 and T3 Code data at `~/.t3/userdata`. The helper runs a read-only query over SSH; it does not install files or start a T3 server on that computer. Matches show the computer name and open the correct T3 environment.
 
@@ -58,11 +58,13 @@ Duplicate PR rows count once in the lookup and popup groups. PR/branch lookups r
 
 Branch lookups also work on repository home pages, branch folders, and files. The selected branch comes from GitHub’s branch picker, so file paths are not mistaken for branch names. Tag and commit snapshots are excluded. The toolbar popup follows branch pages too.
 
-The popup’s **Lookup and display filters** lets you include/exclude archived threads or branch matches, select a computer, and turn list badges off. Preferences are saved locally in Chrome and update open GitHub pages immediately. If filters hide all matches, the page offers **Show all threads** so matches do not disappear without explanation. Filters affect display, not which configured computers are checked.
+On branch pages and inferred PR matches, click the branch name in the popup to open a prefilled branch lookup in the thread browser. For forked PRs this shortcut uses the source repository, preserving the exact branch name.
+
+The popup’s collapsed **Filters** section lets you include/exclude archived threads or branch matches, select a computer, and turn list badges off. Preferences are saved locally in Chrome and update open GitHub pages immediately. If filters hide all matches, the page offers **Show all threads** so matches do not disappear without explanation. Filters affect display, not which configured computers are checked.
 
 **Copy link** in the thread browser or popup copies the T3 desktop link. If the clipboard is unavailable, a selected text field lets you copy it manually.
 
-The popup links to a **Repository threads** browser. It finds threads associated with that GitHub repository through a linked PR or their workspace Git remote, including threads without a PR. Search the loaded results by thread title, branch, or project. Results show computer coverage and any limit (up to 200 threads); saved display filters apply. You can also enter a repository manually.
+The popup’s **Browse repository threads** and **Find threads** links open the thread browser. It finds threads associated with that GitHub repository through a linked PR or their workspace Git remote, including threads without a PR. Search the loaded results by thread title, branch, or project. Results show computer coverage and any limit (up to 200 threads); saved display filters apply. You can also enter a repository manually.
 
 In the thread browser, expand **Look up a specific branch** and enter an exact branch name to check recorded and current workspace branches across your configured computers. Branch names are case-sensitive and may contain slashes. Use the fork’s repository for forked branches. Leave Branch blank to browse the repository or look up a pasted PR. The live-workspace preference applies to these lookups, and JSON exports retain the queried branch and observed workspace branch separately.
 
@@ -76,7 +78,7 @@ The toolbar icon shows the visible match count on PR/branch pages, or the number
 
 Use **Alt+Shift+T** (Option+Shift+T on Mac) to open the toolbar popup. Chrome lets you change or assign this shortcut at `chrome://extensions/shortcuts` if it conflicts with another extension.
 
-The popup also groups the current PR list’s linked threads by PR, reusing the list’s in-flight lookup. From any page, **Find threads by repository or PR URL** opens the thread browser. A pasted PR URL checks explicit T3 links; visiting that PR on GitHub also enables source-branch/workspace matching. Thread ordering is saved across the popup, panels, list menus, and thread browser.
+The popup also groups the current PR list’s linked threads by PR, reusing the list’s in-flight lookup. From any page, **Find threads** opens the thread browser. A pasted PR URL checks explicit T3 links; visiting that PR on GitHub also enables source-branch/workspace matching. Thread ordering is saved across the popup, panels, list menus, and thread browser.
 
 ## Local data access
 
@@ -120,6 +122,16 @@ For visual checks, run `python3 scripts/preview.py` and open the printed URL. St
 
 The same preview server exposes `/pr.html` for the compact GitHub panel, `/popup.html`, and `/options.html`. Every preview uses sample data only.
 
+### Verification and review handoff
+
+The v1.5.0 suite has 62 JavaScript tests and 34 Python tests. GitHub Actions runs them on Ubuntu only. Coverage includes navigation and stale-response guards, fork/source branch handling, saved filters, manual refresh caching, lookup limits, native framing, SSH aggregation, read-only SQLite/WAL access, and installer config preservation.
+
+Manual Chrome previews checked the compact PR panel, popup, incomplete-lookup warning, thread-browser filters, and branch shortcut. Use `/popup.html?branch=1` to exercise the shortcut and `/popup.html?limited=1` for the warning. Previews verify rendering and interaction with synthetic responses; reload the installed extension and GitHub tabs to verify the actual Chrome/native integration after an update.
+
+Live native-protocol checks on the installed helper verified explicit PR matching and current-workspace branch matching across the local computer and a configured SSH computer, plus deduplication of mixed-case repeated PR queries. Those checks are separate from the sample-data browser preview.
+
+Review areas: GitHub DOM selectors may need updates as GitHub changes its layout. Remote computers require explicitly configured SSH aliases. The CLI installer preserves settings, but its SSH argument validation does not yet share the settings page’s full normalized-config validation, and its config write is not atomic; the native settings save path is atomic.
+
 Version 1.2.0 adds branch and live-workspace lookup, list badges and list-aware popup, details/checkout checks, saved filtering and sorting, repository/manual-PR search, JSON link export, computer settings, toolbar counts, and the keyboard shortcut. Reload the installed extension in `chrome://extensions` after updates, then reload GitHub tabs. The popup shows the version Chrome actually loaded.
 
 Version 1.2.1 simplifies the GitHub panel to thread links, titles, computers, and matching branches for inferred results. Additional tools and workspace metadata remain in the popup and thread browser.
@@ -131,3 +143,5 @@ Version 1.3.1 adds the shared lookup/display filter controls to the thread brows
 Version 1.4.0 redesigns the popup as a compact thread launcher and removes periodic polling. New pages and manual Refresh still query the configured computers.
 
 Version 1.4.1 deduplicates PR-list lookup/grouping and reports omitted rows or threads consistently through existing coverage warnings.
+
+Version 1.5.0 makes the popup’s branch name a shortcut to an exact branch lookup, preserving branch case, slashes, and fork source repositories.
