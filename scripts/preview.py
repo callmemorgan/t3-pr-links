@@ -28,6 +28,7 @@ MOCK = r'''
       if(message.type==="checkoutLookup") return {ok:true,threads:[{id:message.threadId,environmentId:message.environmentId,checkout:{state:"branch",branch:"codex/dependency-sources",matchesRecorded:true}}]};
       if(message.type==="status") return {ok:true,threadCount:3,environments};
       if(message.type==="lookup") return {...response,threads:[{...threads[0],matchType:"linked"}]};
+      if(message.type==="directBranchLookup") return {...response,threads:threads.filter(thread=>thread.branch===message.branch).map(thread=>({...thread,matchType:"branch"}))};
       return response;
     }},
     tabs:{async query(){return [{id:1}];},async sendMessage(){return {pr:{repository:"example/repository",number:57},head:{repository:"example/repository",branch:"codex/dependency-sources"},result:{...response,threads:[{...threads[0],matchType:"linked"}]}};}},

@@ -66,7 +66,7 @@ test("toolbar badges remain scoped to the sender's current GitHub page and never
 
 test("manual PR lookups are restricted to the thread browser and canonical GitHub PR URLs", async () => {
   const { handler, calls } = background();
-  const sender = { id: "test-id", url: "chrome-extension://test-id/threads.html" };
+  const sender = { id: "test-id", url: "chrome-extension://test-id/threads.html?repository=owner%2Frepo" };
   const message = { type: "directLookup", url: "https://github.com/Owner/Repo/pull/42/files" };
   assert.equal(handler(message, { ...sender, url: "chrome-extension://test-id/popup.html" }, () => {}), false);
   assert.equal(handler({ ...message, url: "https://evil.test/Owner/Repo/pull/42" }, sender, () => {}), false);
@@ -74,4 +74,24 @@ test("manual PR lookups are restricted to the thread browser and canonical GitHu
   await tick();
   assert.equal(calls[0].repository, "owner/repo");
   assert.equal(calls[0].number, 42);
+});
+
+test("manual branch lookup permits query-bearing thread pages and rejects other senders or invalid input", async () => {
+  const { handler, calls } = background();
+  const sender = { id: "test-id", url: "chrome-extension://test-id/threads.html?repository=owner%2Frepo&branch=Feature%2Ffoo#results" };
+  const message = { type: "directBranchLookup", repository: "Owner/Repo", branch: "Feature/foo", liveBranches: false };
+  for (const url of ["chrome-extension://test-id/popup.html", "chrome-extension://test-id/threads.html/other", "https://github.com/owner/repo"]) {
+    assert.equal(handler(message, { ...sender, url }, () => {}), false);
+  }
+  assert.equal(handler(message, { ...sender, tab: { url: "https://github.com/owner/repo" } }, () => {}), false);
+  for (const invalid of [{ branch: "" }, { branch: "feature\nfoo" }, { branch: "x".repeat(1025) }, { repository: "owner/repo/extra" }]) {
+    assert.equal(handler({ ...message, ...invalid }, sender, () => {}), false);
+  }
+  assert.equal(handler(message, sender, () => {}), true);
+  await tick();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].type, "branchLookup");
+  assert.equal(calls[0].repository, "owner/repo");
+  assert.equal(calls[0].branch, "Feature/foo");
+  assert.equal(calls[0].liveBranches, false);
 });

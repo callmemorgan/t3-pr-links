@@ -9,6 +9,7 @@ input { font: inherit; padding: 10px 12px; border: 1px solid light-dark(#cfc5dc,
 select { font: inherit; padding: 8px; border-radius: 6px; border: 1px solid light-dark(#cfc5dc, #51465e); background: light-dark(#fff, #211c29); color: inherit; }
 .result-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; } .result-controls label { margin: 0; }
 .query { display: flex; gap: 10px; } .query input { flex: 1; min-width: 0; }
+#branch-lookup { margin-top: 12px; } #branch-lookup summary { cursor: pointer; color: light-dark(#6633bc, #c4a7fa); } #branch-lookup label { margin-top: 12px; }
 button { font: inherit; border: 0; border-radius: 6px; padding: 9px 14px; background: #6838d9; color: white; cursor: pointer; }
 button:disabled { opacity: .6; cursor: wait; }
 #status { margin-top: 24px; font-weight: 600; } #coverage { opacity: .75; margin-top: 5px; }

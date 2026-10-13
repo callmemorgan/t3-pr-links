@@ -2,22 +2,27 @@ let result = null;
 let generation = 0;
 let loadedRepository = null;
 let loadedPullRequest = null;
+let loadedBranch = null;
+let activeQuery = null;
 let checkedAt = null;
 const repositoryInput = document.getElementById("repository");
+const branchInput = document.getElementById("branch");
 const searchInput = document.getElementById("search");
 
-function parseInput(value) {
+function parseInput(value, branchValue = "") {
   const clean = value.trim();
+  const branch = branchValue.trim();
+  if (branch && (branch.length > 1024 || /[\x00-\x1f\x7f]/.test(branch))) return null;
   const pr = T3Pr.parsePullRequest(clean);
-  if (pr) return { repository: pr.repository, pr, url: `https://github.com/${pr.repository}/pull/${pr.number}` };
+  if (pr) return branch ? null : { repository: pr.repository, pr, url: `https://github.com/${pr.repository}/pull/${pr.number}` };
   const path = /^https:\/\/github\.com\//i.test(clean) ? T3Pr.repositoryPage(clean)?.repository : clean;
-  return typeof path === "string" && /^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(path) ? { repository: path.toLowerCase(), pr: null } : null;
+  return typeof path === "string" && /^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(path) ? { repository: path.toLowerCase(), pr: null, branch: branch || null } : null;
 }
 
 function shownThreads() {
   const query = searchInput.value.trim().toLowerCase();
   return T3Settings.sort(T3Settings.filter(result?.threads || []).filter(thread => !query || [thread.title, thread.branch, thread.project]
-    .some(value => typeof value === "string" && value.toLowerCase().includes(query))), { repository: true });
+    .some(value => typeof value === "string" && value.toLowerCase().includes(query))), { repository: !loadedPullRequest && !loadedBranch });
 }
 
 function render() {
@@ -34,6 +39,7 @@ function render() {
     if (!row) continue;
     card.append(row);
     card.append(T3Ui.element(document, "p", "branch", thread.branch ? `Branch: ${thread.branch}` : "No recorded branch"));
+    if (thread.matchedBranch && thread.matchedBranch !== thread.branch) card.append(T3Ui.element(document, "p", "branch", `Matching workspace branch: ${thread.matchedBranch}`));
     if (thread.project) card.append(T3Ui.element(document, "p", "branch", `Project: ${thread.project}`));
     if (thread.workspace) card.append(T3Ui.element(document, "p", "branch", `${thread.workspaceType === "worktree" ? "Worktree" : "Workspace"}: ${thread.workspace}`));
     const prs = T3Ui.pullRequestLinks(document, thread);
@@ -42,11 +48,12 @@ function render() {
     container.append(card);
   }
   if (!threads.length && result.ok) container.append(T3Ui.element(document, "p", "", all.length
-    ? "No threads match your search and display filters." : "No T3 threads found for this repository on the computers checked."));
+    ? "No threads match your search and display filters." : "No T3 threads found for this lookup on the computers checked."));
 }
 
 async function load() {
-  const query = parseInput(repositoryInput.value);
+  const query = parseInput(repositoryInput.value, branchInput.value);
+  activeQuery = query;
   const repository = query?.repository;
   const status = document.getElementById("status");
   const requestGeneration = ++generation;
@@ -55,22 +62,28 @@ async function load() {
   document.getElementById("count").textContent = "";
   document.getElementById("coverage").textContent = "";
   if (!repository) {
-    status.textContent = "Enter owner/repository, a GitHub repository URL, or a GitHub PR URL.";
+    status.textContent = T3Pr.parsePullRequest(repositoryInput.value.trim()) && branchInput.value.trim()
+      ? "Leave Branch blank when looking up a pull request." : "Enter owner/repository, a GitHub repository URL, or a GitHub PR URL, and a valid optional branch.";
     document.getElementById("load").disabled = false;
     return;
   }
   repositoryInput.value = query.pr ? query.url : repository;
-  const label = query.pr ? `${repository} #${query.pr.number}` : repository;
+  branchInput.value = query.branch || "";
+  const label = query.pr ? `${repository} #${query.pr.number}` : query.branch ? `${repository} · ${query.branch}` : repository;
   status.textContent = `Checking ${label}…`;
-  document.getElementById("page-title").textContent = query.pr ? "PR threads" : "Repository threads";
+  document.getElementById("page-title").textContent = query.pr ? "PR threads" : query.branch ? "Branch threads" : "Repository threads";
   document.getElementById("load").disabled = true;
   try {
     await T3Settings.ready;
-    const response = await chrome.runtime.sendMessage(query.pr ? { type: "directLookup", url: query.url } : { type: "repositoryLookup", repository });
+    if (requestGeneration !== generation) return;
+    const response = await chrome.runtime.sendMessage(query.pr ? { type: "directLookup", url: query.url }
+      : query.branch ? { type: "directBranchLookup", repository, branch: query.branch, liveBranches: T3Settings.get().liveBranches }
+      : { type: "repositoryLookup", repository });
     if (requestGeneration !== generation) return;
     result = response || { ok: false, error: "No response from the helper." };
     loadedRepository = repository;
     loadedPullRequest = query.pr;
+    loadedBranch = query.branch || null;
     checkedAt = new Date().toISOString();
     status.textContent = result.ok ? `Threads for ${label}` : result.error || "Could not read T3 data.";
     const environments = result.environments || [{ name: "This computer", ok: result.ok }];
@@ -85,11 +98,12 @@ async function load() {
 document.getElementById("export").addEventListener("click", () => {
   if (!result?.ok || !shownThreads().length) return;
   const data = {
-    repository: loadedRepository, pullRequest: loadedPullRequest?.number || null, checkedAt, search: searchInput.value.trim(),
+    repository: loadedRepository, pullRequest: loadedPullRequest?.number || null, branch: loadedBranch, checkedAt, search: searchInput.value.trim(),
     truncated: Boolean(result.truncated), lookupWarnings: result.lookupWarnings || [],
     computers: (result.environments || [{ name: "This computer", ok: true }]).map(({ name, ok }) => ({ name, available: ok })),
     threads: shownThreads().map(thread => ({
       title: thread.title, computer: thread.computer || "This computer", branch: thread.branch || null,
+      matchedBranch: thread.matchedBranch || null, matchType: thread.matchType || null,
       project: thread.project || null, archived: Boolean(thread.archived),
       t3Link: T3Pr.threadUrl(thread.environmentId, thread.id),
       pullRequests: (thread.pullRequests || []).flatMap(pr => {
@@ -103,7 +117,7 @@ document.getElementById("export").addEventListener("click", () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${loadedRepository.replace("/", "-")}${loadedPullRequest ? `-pr-${loadedPullRequest.number}` : ""}-t3-links.json`;
+    link.download = `${loadedRepository.replace("/", "-")}${loadedPullRequest ? `-pr-${loadedPullRequest.number}` : loadedBranch ? "-branch" : ""}-t3-links.json`;
     document.body.append(link);
     link.click();
     link.remove();
@@ -119,9 +133,22 @@ sortInput.addEventListener("change", async () => {
   try { await T3Settings.update({ sort: sortInput.value }); }
   catch { document.getElementById("status").textContent = "Could not save the thread order. Try again."; sortInput.value = T3Settings.get().sort; }
 });
-function preferencesChanged() { sortInput.value = T3Settings.get().sort; render(); }
+let liveBranches = T3Settings.get().liveBranches;
+function preferencesChanged() {
+  const preferences = T3Settings.get();
+  sortInput.value = preferences.sort;
+  const changed = preferences.liveBranches !== liveBranches;
+  liveBranches = preferences.liveBranches;
+  if (changed && activeQuery?.branch) void load();
+  else render();
+}
 T3Settings.subscribe(preferencesChanged);
 void T3Settings.ready.then(preferencesChanged);
 const initialParameters = new URL(location.href).searchParams;
 const initial = initialParameters.get("pr") || initialParameters.get("repository");
-if (initial) { repositoryInput.value = initial; void load(); }
+if (initial) {
+  repositoryInput.value = initial;
+  branchInput.value = initialParameters.get("branch") || "";
+  document.getElementById("branch-lookup").open = Boolean(branchInput.value);
+  void load();
+}

@@ -62,6 +62,8 @@ The popup’s **Lookup and display filters** lets you include/exclude archived t
 
 The popup links to a **Repository threads** browser. It finds threads associated with that GitHub repository through a linked PR or their workspace Git remote, including threads without a PR. Search the loaded results by thread title, branch, or project. Results show computer coverage and any limit (up to 200 threads); saved display filters apply. You can also enter a repository manually.
 
+In the thread browser, expand **Look up a specific branch** and enter an exact branch name to check recorded and current workspace branches across your configured computers. Branch names are case-sensitive and may contain slashes. Use the fork’s repository for forked branches. Leave Branch blank to browse the repository or look up a pasted PR. The live-workspace preference applies to these lookups, and JSON exports retain the queried branch and observed workspace branch separately.
+
 **Check current checkout** in the thread browser reads Git’s current branch from that thread’s saved workspace. It distinguishes a matching branch, a different branch, detached HEAD, and a missing/unreadable workspace. The check runs only when clicked and never changes the checkout.
 
 The toolbar icon shows the visible match count on PR/branch pages, or the number of linked PRs on a list. An amber **!** means some computers could not be checked; its tooltip includes the count.
@@ -117,3 +119,5 @@ The same preview server exposes `/pr.html` for the compact GitHub panel, `/popup
 Version 1.2.0 adds branch and live-workspace lookup, list badges and list-aware popup, details/checkout checks, saved filtering and sorting, repository/manual-PR search, JSON link export, computer settings, toolbar counts, and the keyboard shortcut. Reload the installed extension in `chrome://extensions` after updates, then reload GitHub tabs. The popup shows the version Chrome actually loaded.
 
 Version 1.2.1 simplifies the GitHub panel to thread links, titles, computers, and matching branches for inferred results. Additional tools and workspace metadata remain in the popup and thread browser.
+
+Version 1.3.0 adds manual branch lookup in the thread browser and fixes manual PR lookup when the browser was opened with repository query parameters.

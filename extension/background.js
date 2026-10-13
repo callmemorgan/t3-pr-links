@@ -2,8 +2,9 @@ importScripts("common.js");
 
 const HOST = "codes.t3.pr_links";
 
-function isExtensionPage(sender) {
-  return !sender.tab && sender.url?.startsWith(chrome.runtime.getURL(""));
+function isExtensionPage(sender, page) {
+  return !sender.tab && sender.url?.startsWith(chrome.runtime.getURL(""))
+    && (!page || sender.url.split(/[?#]/, 1)[0] === chrome.runtime.getURL(page));
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -32,14 +33,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   let request;
   if (message?.type === "status" && isExtensionPage(sender)) {
     request = { type: "status" };
-  } else if (["getConfig", "saveConfig"].includes(message?.type) && isExtensionPage(sender)
-      && sender.url === chrome.runtime.getURL("options.html")) {
+  } else if (["getConfig", "saveConfig"].includes(message?.type) && isExtensionPage(sender, "options.html")) {
     request = message.type === "getConfig" ? { type: "getConfig" } : { type: "saveConfig", config: message.config };
   } else if (message?.type === "repositoryLookup" && isExtensionPage(sender)) {
     if (typeof message.repository !== "string" || !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(message.repository)) return false;
     request = { type: "repositoryLookup", host: "github.com", repository: message.repository.toLowerCase() };
-  } else if (message?.type === "directLookup" && isExtensionPage(sender)
-      && sender.url === chrome.runtime.getURL("threads.html")) {
+  } else if (message?.type === "directBranchLookup" && isExtensionPage(sender, "threads.html")) {
+    if (typeof message.repository !== "string" || !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(message.repository)
+        || typeof message.branch !== "string" || !message.branch || message.branch.length > 1024
+        || /[\x00-\x1f\x7f]/.test(message.branch)) return false;
+    request = { type: "branchLookup", host: "github.com", repository: message.repository.toLowerCase(),
+      branch: message.branch, liveBranches: message.liveBranches !== false };
+  } else if (message?.type === "directLookup" && isExtensionPage(sender, "threads.html")) {
     const pr = T3Pr.parsePullRequest(message.url);
     if (!pr) return false;
     request = { type: "lookup", host: pr.host, repository: pr.repository, number: pr.number };
