@@ -18,23 +18,32 @@ MOCK = r'''
     {id:"example-2",environmentId:"example-env",title:"Improve branch discovery",computer:"This computer",branch:"feature/branch-lookup",project:"Example project",workspace:"/example/repository",workspaceType:"project",updatedAt:"2026-10-11T20:00:00Z",matchType:"repository",pullRequests:[]},
     {id:"example-3",environmentId:"example-env",title:"Archived browser integration",computer:"Mac Mini",branch:"feature/browser-links",project:"Example project",archived:true,updatedAt:"2026-09-10T20:00:00Z",matchType:"repository",pullRequests:[{repository:"example/repository",number:42}]}
   ];
+  const forkThread = {id:"example-4",environmentId:"example-env",title:"Pin sources from a contributor fork",computer:"This computer",branch:"Contributor/pinned-sources",project:"Example project",workspace:"/example/fork",workspaceType:"project",updatedAt:"2026-10-12T19:00:00Z",matchType:"repository",pullRequests:[]};
+  const samplePr = {repository:"example/repository",number:57};
+  const sampleHead = {repository:samplePr.repository,branch:threads[0].branch};
+  const forkHead = {repository:"contributor/repository",branch:forkThread.branch};
+  // Threads whose workspace remote is each repository, so branch lookups honour the repository.
+  const repositoryThreads = {[sampleHead.repository]:threads,[forkHead.repository]:[forkThread]};
   const environments = [{name:"This computer",ok:true},{name:"Mac Mini",ok:true}];
   let config = {userdata:"~/.t3/userdata",sshHosts:[{host:"mac-mini",name:"Mac Mini",userdata:"~/.t3/userdata"}]};
-  const limited = new URL(location.href).searchParams.get("limited") === "1";
+  const params = new URL(location.href).searchParams;
+  const limited = params.get("limited") === "1";
   const response = {ok:true,threads,environments,...(limited ? {truncated:true,lookupWarnings:["Some matching threads were omitted because the result limit was reached."]} : {})};
+  const match = (kind, thread = threads[0]) => ({...response,threads:[{...thread,matchType:kind}]});
   window.chrome = {
     runtime:{getURL:path=>new URL(path,location.href).href,getManifest:()=>({version:PREVIEW_VERSION}),async sendMessage(message){
       if(message.type==="getConfig") return {ok:true,config};
       if(message.type==="saveConfig") {config=message.config;return {ok:true,config};}
-      if(message.type==="checkoutLookup") return {ok:true,threads:[{id:message.threadId,environmentId:message.environmentId,checkout:{state:"branch",branch:"codex/dependency-sources",matchesRecorded:true}}]};
+      if(message.type==="checkoutLookup") return {ok:true,threads:[{id:message.threadId,environmentId:message.environmentId,checkout:{state:"branch",branch:threads[0].branch,matchesRecorded:true}}]};
       if(message.type==="status") return {ok:true,threadCount:3,environments};
-      if(message.type==="lookup") return {...response,threads:[{...threads[0],matchType:"linked"}]};
-      if(message.type==="directBranchLookup") return {...response,threads:threads.filter(thread=>thread.branch===message.branch).map(thread=>({...thread,matchType:"branch"}))};
+      if(message.type==="lookup") return match("linked");
+      if(message.type==="directBranchLookup") return {...response,threads:(repositoryThreads[message.repository]||[]).filter(thread=>thread.branch===message.branch).map(thread=>({...thread,matchType:"branch"}))};
       return response;
     }},
     tabs:{async query(){return [{id:1}];},async sendMessage(){
-      if(new URL(location.href).searchParams.get("branch")==="1") return {branch:{repository:"example/repository",branch:"codex/dependency-sources"},result:{...response,threads:[{...threads[0],matchType:"branch"}]}};
-      return {pr:{repository:"example/repository",number:57},head:{repository:"example/repository",branch:"codex/dependency-sources"},result:{...response,threads:[{...threads[0],matchType:"linked"}]}};
+      if(params.get("branch")==="1") return {branch:sampleHead,result:match("branch")};
+      if(params.get("fork")==="1") return {pr:samplePr,head:forkHead,result:match("branch",forkThread)};
+      return {pr:samplePr,head:sampleHead,result:match("linked")};
     }},
     storage:{local:{async get(){return {preferences};},async set(data){preferences=data.preferences;listeners.forEach(fn=>fn({preferences:{newValue:preferences}},"local"));}},onChanged:{addListener(fn){listeners.push(fn);}}}
   };

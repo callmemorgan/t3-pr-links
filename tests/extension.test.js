@@ -41,6 +41,10 @@ test("adds a native link and treats thread titles as text", async t => {
   assert.equal(panel.querySelector("a").getAttribute("href"), "t3code://threads/env-1/thread-1");
   assert.equal(panel.querySelector("img"), null);
   assert.ok(panel.textContent.includes(response.threads[0].title));
+  const link = panel.querySelector("a");
+  dom.window.dispatchEvent(new dom.window.Event("focus"));
+  await tick();
+  assert.equal(dom.window.document.querySelector("#t3-pr-links a"), link);
 });
 
 test("shows all matched threads and stays quiet on unmatched PRs", async t => {
@@ -297,6 +301,7 @@ test("PR panel stays compact while associated PR links remain available to the t
   assert.equal(panel.querySelector(".t3-pr-checkout"), null);
   assert.equal(panel.textContent.includes(thread.workspace), false);
   assert.equal(panel.textContent.includes("Project"), false);
+  for (const unrendered of ["Project", "worktree", "evil/repo/extra"]) assert.equal(panel.outerHTML.includes(unrendered), false);
   document.body.append(dom.window.T3Ui.pullRequestLinks(document, thread));
   assert.equal(document.querySelectorAll(".t3-pr-associated-prs a").length, 2);
   assert.equal(document.querySelector(".t3-pr-associated-prs a").href, "https://github.com/owner/repo/pull/42");

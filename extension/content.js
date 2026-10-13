@@ -8,6 +8,9 @@
   let scheduled = false;
   let lastChecked = 0;
   let pendingLookup = null;
+  // Render signatures stay off the DOM: they hold host fields the panel never shows
+  // (workspace paths, projects, raw errors) that github.com scripts could read.
+  const signatures = new WeakMap();
 
   function removePanel() { document.getElementById(ID)?.remove(); }
   function queryFor(context) { return context.query ? JSON.stringify([context.query, T3Settings.get().liveBranches]) : null; }
@@ -35,7 +38,7 @@
       return;
     }
     const signature = JSON.stringify([threads, hiddenCount, unavailable, warnings, result.error]);
-    if (panel?.dataset.signature === signature) {
+    if (signatures.get(panel) === signature) {
       const refresh = panel.querySelector('[data-action="refresh"]');
       if (refresh) {
         refresh.disabled = inFlight;
@@ -52,7 +55,7 @@
       if (context.branch) anchor.prepend(panel);
       else anchor.insertAdjacentElement("afterend", panel);
     }
-    panel.dataset.signature = signature;
+    signatures.set(panel, signature);
     panel.replaceChildren();
     const mark = document.createElement("span");
     mark.className = "t3-pr-mark";

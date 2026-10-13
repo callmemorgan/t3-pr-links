@@ -42,7 +42,7 @@ python3 scripts/install.py --ssh-host mac-mini
 
 You can manage the local data directory and up to 12 SSH computers from **Settings** in the popup, or from Chrome’s extension Options. Each computer has a display name, existing SSH alias, and T3 data directory. **Check saved connections** reports connectivity without changing the form.
 
-Repeat `--ssh-host` to include more computers. This uses your existing SSH keys and known host records, with no password prompts. The remote computer needs Python 3 and T3 Code data at `~/.t3/userdata`. The helper runs a read-only query over SSH; it does not install files or start a T3 server on that computer. Matches show the computer name and open the correct T3 environment.
+Repeat `--ssh-host` to include more computers. This uses your existing SSH keys and known host records, with no password prompts. These connections never forward your SSH agent, X11, or ports, or run a configured `LocalCommand`, even if your SSH config enables them. The remote computer needs Python 3 and T3 Code data at `~/.t3/userdata`. The helper runs a read-only query over SSH; it does not install files or start a T3 server on that computer. Matches show the computer name and open the correct T3 environment.
 
 Remote computers are explicitly configured; the extension does not automatically import T3's encrypted connection catalog. If a computer is offline, available computers still return matches and the toolbar popup reports which computer could not be read. Adding SSH connections does not require any extra Chrome permissions. Reinstalling preserves your saved local directory and remote computers unless you explicitly supply replacements. `--ssh-host` replaces the remote list; `--clear-ssh-hosts` removes it.
 
@@ -58,7 +58,7 @@ Duplicate PR rows count once in the lookup and popup groups. PR/branch lookups r
 
 Branch lookups also work on repository home pages, branch folders, and files. The selected branch comes from GitHub’s branch picker, so file paths are not mistaken for branch names. Tag and commit snapshots are excluded. The toolbar popup follows branch pages too.
 
-On branch pages and inferred PR matches, click the branch name in the popup to open a prefilled branch lookup in the thread browser. For forked PRs this shortcut uses the source repository, preserving the exact branch name.
+On branch pages, and on PRs where GitHub shows the source branch, click the branch name in the popup to open a prefilled branch lookup in the thread browser, even when the current lookup found no branch match. For forked PRs this shortcut uses the source repository, preserving the exact branch name.
 
 The popup’s collapsed **Filters** section lets you include/exclude archived threads or branch matches, select a computer, and turn list badges off. Preferences are saved locally in Chrome and update open GitHub pages immediately. If filters hide all matches, the page offers **Show all threads** so matches do not disappear without explanation. Filters affect display, not which configured computers are checked.
 
@@ -103,7 +103,7 @@ npm ci
 npm test
 ```
 
-Tests cover exact matching across projects, unlinking, archived/deleted threads, V1 compatibility, live WAL changes, native message framing, GitHub navigation, safe rendering, and the background message boundary. The extension itself has no build step or runtime dependencies.
+Tests cover exact matching across projects, unlinking, archived/deleted threads, V1 compatibility, read-only SQLite access and live WAL changes, native message framing, SSH aggregation, GitHub navigation and stale-response guards, fork/source branch handling, saved filters, manual refresh caching, lookup limits, safe rendering, the background message boundary, and installer config preservation. The extension itself has no build step or runtime dependencies.
 
 Use Node.js 22 or newer for the tests. GitHub Actions runs the suite on Linux. Bug reports and pull requests are welcome; use synthetic examples rather than posting your T3 databases, private thread links, or computer configuration.
 
@@ -122,16 +122,6 @@ For visual checks, run `python3 scripts/preview.py` and open the printed URL. St
 
 The same preview server exposes `/pr.html` for the compact GitHub panel, `/popup.html`, and `/options.html`. Every preview uses sample data only.
 
-### Verification and review handoff
-
-The v1.5.0 suite has 62 JavaScript tests and 34 Python tests. GitHub Actions runs them on Ubuntu only. Coverage includes navigation and stale-response guards, fork/source branch handling, saved filters, manual refresh caching, lookup limits, native framing, SSH aggregation, read-only SQLite/WAL access, and installer config preservation.
-
-Manual Chrome previews checked the compact PR panel, popup, incomplete-lookup warning, thread-browser filters, and branch shortcut. Use `/popup.html?branch=1` to exercise the shortcut and `/popup.html?limited=1` for the warning. Previews verify rendering and interaction with synthetic responses; reload the installed extension and GitHub tabs to verify the actual Chrome/native integration after an update.
-
-Live native-protocol checks on the installed helper verified explicit PR matching and current-workspace branch matching across the local computer and a configured SSH computer, plus deduplication of mixed-case repeated PR queries. Those checks are separate from the sample-data browser preview.
-
-Review areas: GitHub DOM selectors may need updates as GitHub changes its layout. Remote computers require explicitly configured SSH aliases. The CLI installer preserves settings, but its SSH argument validation does not yet share the settings page’s full normalized-config validation, and its config write is not atomic; the native settings save path is atomic.
-
 Version 1.2.0 adds branch and live-workspace lookup, list badges and list-aware popup, details/checkout checks, saved filtering and sorting, repository/manual-PR search, JSON link export, computer settings, toolbar counts, and the keyboard shortcut. Reload the installed extension in `chrome://extensions` after updates, then reload GitHub tabs. The popup shows the version Chrome actually loaded.
 
 Version 1.2.1 simplifies the GitHub panel to thread links, titles, computers, and matching branches for inferred results. Additional tools and workspace metadata remain in the popup and thread browser.
@@ -144,4 +134,16 @@ Version 1.4.0 redesigns the popup as a compact thread launcher and removes perio
 
 Version 1.4.1 deduplicates PR-list lookup/grouping and reports omitted rows or threads consistently through existing coverage warnings.
 
-Version 1.5.0 makes the popup’s branch name a shortcut to an exact branch lookup, preserving branch case, slashes, and fork source repositories.
+Version 1.5.0 makes the popup’s branch name a shortcut to an exact branch lookup (see [What matches](#what-matches)).
+
+Version 1.5.1 fixes the extension message boundary so Settings, the thread browser, the branch shortcut, checkout checks, and saved-connection checks reach the helper when those pages open in a tab. The branch shortcut now appears whenever the PR’s source branch is known, keeps exact branch names, uses the standard link colour, and has one consistent tooltip. Unattended SSH lookups disable agent, X11, and port forwarding; render state no longer leaves lookup data in the GitHub page; the preview adds `/popup.html?fork=1`.
+
+### Verification and review handoff
+
+The v1.5.1 automated checks are both suites, run by `npm test`; [Development](#development) describes their coverage and CI. A throwaway headless Chrome profile with a stub helper confirmed that the Settings page and thread browser reach the helper when opened in a tab; the sample-data previews replace `chrome.runtime.sendMessage`, so they cannot exercise that boundary.
+
+Manual Chrome previews checked the compact PR panel, popup, incomplete-lookup warning, thread-browser filters, and branch shortcut. Use `/popup.html?branch=1` (branch page) and `/popup.html?fork=1` (forked PR, whose shortcut should find the fork’s thread) to exercise the [branch shortcut](#what-matches), and `/popup.html?limited=1` for the warning. Previews verify rendering and interaction with synthetic responses; reload the installed extension and GitHub tabs to verify the actual Chrome/native integration after an update.
+
+Live native-protocol checks on the installed helper verified explicit PR matching and current-workspace branch matching across the local computer and a configured SSH computer, plus deduplication of mixed-case repeated PR queries. Those checks are separate from the sample-data browser preview.
+
+Review areas: GitHub DOM selectors may need updates as GitHub changes its layout. Remote computers require explicitly configured SSH aliases. The CLI installer preserves settings, but its SSH argument validation does not yet share the settings page’s full normalized-config validation, and its config write is not atomic; the native settings save path is atomic.

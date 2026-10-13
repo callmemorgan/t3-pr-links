@@ -286,6 +286,8 @@ class HostTests(unittest.TestCase):
         self.assertEqual(response["threads"][0]["id"], "over-ssh")
         self.assertIn("BatchMode=yes", commands[0])
         self.assertIn("StrictHostKeyChecking=yes", commands[0])
+        forwarding = ["-a", "-x", "ClearAllForwardings=yes", "PermitLocalCommand=no"]
+        self.assertTrue(set(forwarding) <= set(commands[0][:commands[0].index("mini")]))
         self.assertEqual(commands[0][-1], "python3 -")
         with self.assertRaises(ValueError): host.read_remote({"type": "status"}, {"host": "-oProxyCommand=bad"})
 

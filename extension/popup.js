@@ -14,8 +14,14 @@ async function currentPage(force) {
 const installedVersion = chrome.runtime.getManifest?.().version;
 if (installedVersion) document.getElementById("version").textContent = `v${installedVersion}`;
 document.getElementById("settings-link").href = chrome.runtime.getURL("options.html");
-document.getElementById("lookup-link").href = chrome.runtime.getURL("threads.html");
+const threadsUrl = chrome.runtime.getURL("threads.html");
+function threadsPage(query = {}) {
+  const search = Object.entries(query).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&");
+  return search ? `${threadsUrl}?${search}` : threadsUrl;
+}
+document.getElementById("lookup-link").href = threadsPage();
 
+// Returns the status-line count: PRs with shown threads on lists, otherwise shown threads.
 function showContext(context) {
   document.getElementById("context").hidden = !context;
   const container = document.getElementById("threads");
@@ -28,30 +34,23 @@ function showContext(context) {
     : context.branch ? `https://github.com/${repository}/tree/${encodeURIComponent(context.branch.branch)}` : context.list ? context.list.url : `https://github.com/${repository}`;
   title.target = "_blank";
   title.rel = "noopener";
-  const branchHint = document.getElementById("context-branch");
-  const inferred = (context.result?.threads || []).some(thread => ["branch", "checkout"].includes(thread.matchType));
-  const branch = context.branch || (inferred ? context.head : null);
-  branchHint.replaceChildren();
-  branchHint.hidden = !branch;
+  // Offer any known source branch, even when the lookup found no branch match.
+  const branch = context.branch || context.head;
+  document.getElementById("context-branch").hidden = !branch;
   if (branch) {
-    const link = T3Ui.element(document, "a", "", `${branch.repository !== repository ? `${branch.repository} · ` : ""}${branch.branch}`);
-    link.href = `${chrome.runtime.getURL("threads.html")}?repository=${encodeURIComponent(branch.repository)}&branch=${encodeURIComponent(branch.branch)}`;
-    link.target = "_blank";
-    link.rel = "noopener";
-    link.title = `Find T3 threads for ${branch.branch}`;
-    link.setAttribute("aria-label", `Find T3 threads for branch ${branch.branch} in ${branch.repository}`);
-    branchHint.append(link);
+    const link = document.getElementById("context-branch-link");
+    link.textContent = `${branch.repository !== repository ? `${branch.repository} · ` : ""}${branch.branch}`;
+    link.href = threadsPage({ repository: branch.repository, branch: branch.branch });
+    link.title = `Find T3 threads for branch ${branch.branch} in ${branch.repository}`;
   }
-  document.getElementById("browse").href = `${chrome.runtime.getURL("threads.html")}${repository ? `?repository=${encodeURIComponent(repository)}` : ""}`;
+  document.getElementById("browse").href = threadsPage(repository ? { repository } : {});
   const allThreads = context.list ? (context.pullRequests || []).flatMap(pr => pr.threads) : context.result?.threads || [];
-  const threads = T3Settings.sort(T3Settings.filter(allThreads));
-  document.getElementById("empty").hidden = threads.length > 0 || !context.result?.ok;
-  document.getElementById("empty").textContent = allThreads.length && !threads.length
-    ? "Matching threads are hidden by your display filters." : "No matching T3 threads on the computers checked.";
+  let shown = 0;
   if (context.list) {
     for (const pr of context.pullRequests || []) {
       const visible = T3Settings.sort(T3Settings.filter(pr.threads));
       if (!visible.length) continue;
+      shown++;
       const group = T3Ui.element(document, "div", "t3-pr-popup-group");
       const link = T3Ui.element(document, "a", "t3-pr-popup-title", `${pr.repository} #${pr.number}`);
       link.href = pr.url;
@@ -63,11 +62,17 @@ function showContext(context) {
       container.append(group);
     }
   } else {
+    const threads = T3Settings.sort(T3Settings.filter(allThreads));
+    shown = threads.length;
     for (const thread of threads) {
       const row = T3Ui.threadRow(document, thread, { actions: true, badges: false });
       if (row) container.append(row);
     }
   }
+  document.getElementById("empty").hidden = shown > 0 || !context.result?.ok;
+  document.getElementById("empty").textContent = allThreads.length && !shown
+    ? "Matching threads are hidden by your display filters." : "No matching T3 threads on the computers checked.";
+  return shown;
 }
 
 async function check(force = false) {
@@ -83,7 +88,7 @@ async function check(force = false) {
   try {
     await T3Settings.ready;
     const context = await currentPage(force);
-    showContext(context);
+    const shown = showContext(context);
     const response = context?.result || await chrome.runtime.sendMessage({ type: "status" });
     if (!response?.ok) {
       const errors = response?.environments?.filter(environment => !environment.ok)
@@ -95,13 +100,12 @@ async function check(force = false) {
     const available = environments.filter(environment => environment.ok);
     const unavailable = environments.filter(environment => !environment.ok);
     const warnings = response.lookupWarnings || [];
-    const count = context?.list ? (context.pullRequests || []).filter(pr => T3Settings.filter(pr.threads).length).length
-      : context?.result ? T3Settings.filter(response.threads || []).length : response.threadCount;
+    const count = context?.list || context?.result ? shown : response.threadCount;
     connection.dataset.state = unavailable.length || warnings.length ? "attention" : "connected";
     status.textContent = unavailable.length ? "Some computers unavailable" : context?.list ? `${count} linked ${count === 1 ? "PR" : "PRs"}`
       : context?.result ? `${count} matching ${count === 1 ? "thread" : "threads"}` : "Connected to T3 Code";
     details.textContent = `${available.length} ${available.length === 1 ? "computer" : "computers"} connected`;
-    details.title = available.map(environment => environment.name).join(", ");
+    details.title = `${unavailable.length ? "Available: " : ""}${available.map(environment => environment.name).join(", ")}`;
     if (unavailable.length) details.textContent = unavailable.map(environment => `${environment.name}: ${environment.error || "unavailable"}`).join("; ");
     if (warnings.length) { status.textContent = "Lookup was incomplete"; details.textContent += ` · ${warnings.join(" ")}`; }
   } catch (error) {

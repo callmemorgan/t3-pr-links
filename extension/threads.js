@@ -9,9 +9,13 @@ const repositoryInput = document.getElementById("repository");
 const branchInput = document.getElementById("branch");
 const searchInput = document.getElementById("search");
 
+// Git branch names may contain Unicode spaces (NBSP, U+3000, ...) but never ASCII
+// whitespace, so only ASCII whitespace is trimmed from a branch.
+function trimBranch(value) { return value.replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, ""); }
+
 function parseInput(value, branchValue = "") {
   const clean = value.trim();
-  const branch = branchValue.trim();
+  const branch = trimBranch(branchValue);
   if (branch && (branch.length > 1024 || /[\x00-\x1f\x7f]/.test(branch))) return null;
   const pr = T3Pr.parsePullRequest(clean);
   if (pr) return branch ? null : { repository: pr.repository, pr, url: `https://github.com/${pr.repository}/pull/${pr.number}` };
@@ -68,7 +72,7 @@ async function load() {
   document.getElementById("count").textContent = "";
   document.getElementById("coverage").textContent = "";
   if (!repository) {
-    status.textContent = T3Pr.parsePullRequest(repositoryInput.value.trim()) && branchInput.value.trim()
+    status.textContent = T3Pr.parsePullRequest(repositoryInput.value.trim()) && trimBranch(branchInput.value)
       ? "Leave Branch blank when looking up a pull request." : "Enter owner/repository, a GitHub repository URL, or a GitHub PR URL, and a valid optional branch.";
     document.getElementById("load").disabled = false;
     return;
@@ -192,7 +196,7 @@ function preferencesChanged() {
 T3Settings.subscribe(preferencesChanged);
 void T3Settings.ready.then(preferencesChanged);
 const initialParameters = new URL(location.href).searchParams;
-const initial = initialParameters.get("pr") || initialParameters.get("repository");
+const initial = initialParameters.get("repository");
 if (initial) {
   repositoryInput.value = initial;
   branchInput.value = initialParameters.get("branch") || "";

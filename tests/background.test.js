@@ -26,7 +26,7 @@ test("only the computer settings page can read or write helper configuration", a
   const options = { id: "test-id", url: "chrome-extension://test-id/options.html" };
   const config = { userdata: "/data", sshHosts: [] };
   for (const sender of [{ ...options, url: "chrome-extension://test-id/popup.html" },
-    { ...options, tab: { url: "https://github.com/owner/repo/pull/42" } }, { ...options, id: "wrong-id" }]) {
+    { id: "test-id", url: "https://github.com/owner/repo/pull/42", tab: { url: "https://github.com/owner/repo/pull/42" } }, { ...options, id: "wrong-id" }]) {
     assert.equal(handler({ type: "saveConfig", config }, sender, () => {}), false);
   }
   assert.equal(handler({ type: "saveConfig", config }, options, () => {}), true);
@@ -83,7 +83,7 @@ test("manual branch lookup permits query-bearing thread pages and rejects other 
   for (const url of ["chrome-extension://test-id/popup.html", "chrome-extension://test-id/threads.html/other", "https://github.com/owner/repo"]) {
     assert.equal(handler(message, { ...sender, url }, () => {}), false);
   }
-  assert.equal(handler(message, { ...sender, tab: { url: "https://github.com/owner/repo" } }, () => {}), false);
+  assert.equal(handler(message, { id: "test-id", url: "https://github.com/owner/repo", tab: { url: "https://github.com/owner/repo" } }, () => {}), false);
   for (const invalid of [{ branch: "" }, { branch: "feature\nfoo" }, { branch: "x".repeat(1025) }, { repository: "owner/repo/extra" }]) {
     assert.equal(handler({ ...message, ...invalid }, sender, () => {}), false);
   }
@@ -94,4 +94,30 @@ test("manual branch lookup permits query-bearing thread pages and rejects other 
   assert.equal(calls[0].repository, "owner/repo");
   assert.equal(calls[0].branch, "Feature/foo");
   assert.equal(calls[0].liveBranches, false);
+});
+
+test("extension pages opened in tabs keep their page-scoped access and content scripts gain none", async () => {
+  const { handler, calls } = background();
+  // Settings (open_in_tab) and the thread browser run in tabs, so Chrome sets sender.tab for them too.
+  const inTab = url => ({ id: "test-id", url, tab: { id: 7, url } });
+  const threads = inTab("chrome-extension://test-id/threads.html?repository=owner%2Frepo&branch=Feature%2Ffoo");
+  const messages = {
+    status: { type: "status" }, getConfig: { type: "getConfig" }, saveConfig: { type: "saveConfig", config: { userdata: "/data", sshHosts: [] } },
+    repositoryLookup: { type: "repositoryLookup", repository: "owner/repo" },
+    directLookup: { type: "directLookup", url: "https://github.com/owner/repo/pull/42" },
+    directBranchLookup: { type: "directBranchLookup", repository: "owner/repo", branch: "Feature/foo" },
+  };
+  for (const [sender, allowed] of [
+    [threads, ["status", "repositoryLookup", "directLookup", "directBranchLookup"]],
+    [inTab("chrome-extension://test-id/options.html"), ["status", "getConfig", "saveConfig", "repositoryLookup"]],
+    [{ id: "test-id", url: "chrome-extension://test-id/popup.html" }, ["status", "repositoryLookup"]],
+    [inTab("https://github.com/owner/repo/pull/42"), []],
+  ]) {
+    for (const [type, message] of Object.entries(messages)) {
+      assert.equal(handler(message, sender, () => {}), allowed.includes(type), `${type} from ${sender.url}`);
+    }
+  }
+  assert.equal(handler({ type: "checkoutLookup", environmentId: "env", threadId: "thread" }, threads, () => {}), true);
+  await tick();
+  assert.equal(calls.length, 11);
 });

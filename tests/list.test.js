@@ -18,9 +18,10 @@ function list(t, sendMessage, runtime = {}) {
 
 test("PR list batches lookup and adds a direct thread link only beside matching titles", async t => {
   const requests = [];
-  const dom = list(t, async message => { requests.push(message); return { ok: true, matches: { "owner/repo#42": [thread], "owner/repo#43": [] } }; });
+  const dom = list(t, async message => { requests.push(message); return { ok: true, matches: { "owner/repo#42": [{ ...thread, branch: "private/branch" }], "owner/repo#43": [] } }; });
   await tick();
   const badges = dom.window.document.querySelectorAll(".t3-pr-list-badge");
+  assert.equal(dom.window.document.querySelector("main").outerHTML.includes("private/branch"), false);
   assert.equal(badges.length, 1);
   assert.equal(badges[0].href, "t3code://threads/mini/t1");
   assert.equal(badges[0].previousElementSibling.textContent, "PR 42");
@@ -28,6 +29,7 @@ test("PR list batches lookup and adds a direct thread link only beside matching 
   assert.equal(requests[0].urls.length, 2);
   await new Promise(resolve => setTimeout(resolve, 150));
   assert.equal(requests.length, 1);
+  assert.equal(dom.window.document.querySelector(".t3-pr-list-badge"), badges[0]);
 });
 
 test("multiple threads are individually accessible in a PR list menu", async t => {

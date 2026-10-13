@@ -457,9 +457,12 @@ def read_remote(request, remote):
         "    result = {'ok': False, 'error': str(error)}\n"
         "print(json.dumps(result))\n"
     )
+    # Command-line options override ~/.ssh/config, so a ForwardAgent/X11/port-forwarding
+    # or LocalCommand alias cannot extend these automated, unattended sessions.
     try:
         process = subprocess.run(
-            ["/usr/bin/ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=4",
+            ["/usr/bin/ssh", "-T", "-a", "-x", "-o", "ClearAllForwardings=yes", "-o", "PermitLocalCommand=no",
+             "-o", "BatchMode=yes", "-o", "ConnectTimeout=4",
              "-o", "StrictHostKeyChecking=yes", "-o", "ServerAliveInterval=3",
              "-o", "ServerAliveCountMax=1", hostname, "python3 -"],
             input=program, text=True, capture_output=True, timeout=8,

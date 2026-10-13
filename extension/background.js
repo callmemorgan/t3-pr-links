@@ -2,8 +2,11 @@ importScripts("common.js");
 
 const HOST = "codes.t3.pr_links";
 
+// Settings (open_in_tab) and the thread browser run in tabs, so Chrome sets
+// sender.tab for them as well as for content scripts; it cannot tell them apart.
+// sender.url can: a content script reports its github.com page, never this origin.
 function isExtensionPage(sender, page) {
-  return !sender.tab && sender.url?.startsWith(chrome.runtime.getURL(""))
+  return sender.url?.startsWith(chrome.runtime.getURL(""))
     && (!page || sender.url.split(/[?#]/, 1)[0] === chrome.runtime.getURL(page));
 }
 

@@ -7,6 +7,8 @@
   let pendingLookup = null;
   let completedAt = 0;
   let scheduled = false;
+  // Kept off the DOM so github.com scripts cannot read unrendered thread fields.
+  const rowSignatures = new WeakMap();
 
   function targets() {
     if (!T3Pr.isPullRequestList(location.href)) return [];
@@ -36,7 +38,7 @@
       const threads = T3Settings.sort(T3Settings.filter(result?.matches?.[pr.key] || []));
       const rowSignature = JSON.stringify(threads);
       if (!threads.length) { badge?.remove(); continue; }
-      if (badge?.dataset.signature === rowSignature) continue;
+      if (rowSignatures.get(badge) === rowSignature) continue;
       badge?.remove();
       if (threads.length === 1) {
         const thread = threads[0];
@@ -56,7 +58,7 @@
         }
         badge.append(menu);
       }
-      badge.dataset.signature = rowSignature;
+      rowSignatures.set(badge, rowSignature);
       link.insertAdjacentElement("afterend", badge);
     }
   }

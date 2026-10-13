@@ -235,3 +235,17 @@ test("search finds a current workspace branch when the saved branch is stale", a
   document.getElementById("search").dispatchEvent(new dom.window.Event("input"));
   assert.equal(document.querySelectorAll(".thread").length, 1);
 });
+
+test("branch lookups keep Unicode spaces that Git allows and trim only ASCII whitespace", async t => {
+  const requests = [];
+  const dom = browser(t, async request => { requests.push(request); return { ok: true, threads: [] }; }, "?repository=owner%2Frepo&branch=Feature%2Ffoo%C2%A0");
+  await tick();
+  const document = dom.window.document;
+  assert.equal(requests[0].branch, "Feature/foo ");
+  assert.equal(document.getElementById("branch").value, "Feature/foo ");
+  document.getElementById("branch").value = " \tFeature/foo　 ";
+  document.getElementById("lookup").dispatchEvent(new dom.window.Event("submit", { cancelable: true }));
+  await tick();
+  assert.equal(requests[1].branch, "Feature/foo　");
+  assert.equal(document.getElementById("branch").value, "Feature/foo　");
+});
