@@ -48,7 +48,7 @@ Remote computers are explicitly configured; the extension does not automatically
 
 Links use T3 Code's `t3code://threads/<environment-id>/<thread-id>` desktop scheme. T3 Code must be installed and recognize that environment. The extension works on github.com, including private PRs and their Files, Commits, and Checks tabs. GitHub Enterprise domains are not currently included.
 
-While a GitHub tab is visible, links refresh every 30 seconds and when you return to the tab. GitHub navigation updates the displayed links automatically. **Refresh** checks again immediately. The PR panel shows the thread link, title, and computer; inferred matches also show the matching branch and an explanatory badge. Workspace paths, related PRs, copying, and checkout checks live in the thread browser or popup. Unavailable computers are called out on the PR so an incomplete search does not look like a complete search. PRs with no matching thread and no connection problems display no extra panel.
+Opening a new PR, branch, or PR list checks your configured computers. GitHub navigation updates the displayed links automatically. **Refresh** checks again immediately; returning to the same page reuses its results, with no periodic polling. The PR panel shows the thread link, title, and computer; inferred matches also show the matching branch and an explanatory badge. Workspace paths, related PRs, copying, and checkout checks live in the thread browser or popup. Unavailable computers are called out on the PR so an incomplete search does not look like a complete search. PRs with no matching thread and no connection problems display no extra panel.
 
 The toolbar popup shows matches and source-branch information for the current PR, with direct T3 links and its own Refresh button. On other pages it shows connection diagnostics. It communicates with the existing GitHub content script and needs no additional tab-reading permissions.
 
@@ -125,3 +125,5 @@ Version 1.2.1 simplifies the GitHub panel to thread links, titles, computers, an
 Version 1.3.0 adds manual branch lookup in the thread browser and fixes manual PR lookup when the browser was opened with repository query parameters.
 
 Version 1.3.1 adds the shared lookup/display filter controls to the thread browser, recovery for hidden results, and search by observed workspace branch.
+
+Version 1.4.0 redesigns the popup as a compact thread launcher and removes periodic polling. New pages and manual Refresh still query the configured computers.

@@ -49,7 +49,7 @@ test("shows all matched threads and stays quiet on unmatched PRs", async t => {
   await tick();
   assert.equal(dom.window.document.querySelectorAll("#t3-pr-links a").length, 2);
   data = { ok: true, threads: [] };
-  dom.window.dispatchEvent(new dom.window.Event("focus"));
+  dom.window.document.querySelector('[data-action="refresh"]').click();
   await tick();
   assert.equal(dom.window.document.getElementById("t3-pr-links"), null);
 });
@@ -339,4 +339,23 @@ test("workspace matches show the observed source branch rather than a stale reco
   await tick();
   assert.equal(dom.window.document.querySelector(".t3-pr-source-branch").textContent, "Matching branch: feature/current");
   assert.ok(dom.window.document.querySelector(".t3-pr-match-kind").title.includes("currently checked out"));
+});
+
+test("returning to an old PR reuses matches until manual refresh or navigation", async t => {
+  let calls = 0;
+  const dom = fixture(t, async () => { calls++; return response; });
+  await tick();
+  const now = Date.now();
+  dom.window.Date.now = () => now + 300000;
+  dom.window.dispatchEvent(new dom.window.Event("focus"));
+  dom.window.document.dispatchEvent(new dom.window.Event("visibilitychange"));
+  await tick();
+  assert.equal(calls, 1);
+  dom.window.document.querySelector('[data-action="refresh"]').click();
+  await tick();
+  assert.equal(calls, 2);
+  dom.window.history.pushState({}, "", "/owner/repo/pull/43");
+  dom.window.dispatchEvent(new dom.window.Event("focus"));
+  await tick();
+  assert.equal(calls, 3);
 });

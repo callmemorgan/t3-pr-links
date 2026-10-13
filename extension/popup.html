@@ -2,18 +2,17 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>T3 PR Links</title><link rel="stylesheet" href="popup.css"></head>
 <body>
-  <header><span class="mark">T3</span><div><h1>T3 PR Links <span id="version"></span></h1><p>Your code, one click away.</p></div></header>
-  <div id="status" role="status">Checking your T3 Code data…</div>
-  <p id="details"></p>
+  <header><span class="mark" aria-hidden="true">T3</span><h1>T3 PR Links</h1><span id="version"></span></header>
+  <div id="connection" data-state="checking"><div id="status" role="status">Checking connections…</div><p id="details"></p></div>
   <section id="context" hidden aria-label="Threads for this GitHub page">
     <a id="context-title"></a>
     <p id="context-branch" class="hint"></p>
     <div id="threads"></div>
     <p id="empty" hidden>No matching T3 threads on the computers checked.</p>
-    <a id="browse" target="_blank" rel="noopener">Browse this repository’s threads →</a>
+    <a id="browse" class="secondary-link" target="_blank" rel="noopener">Browse repository threads <span aria-hidden="true">→</span></a>
   </section>
   <details id="filters">
-    <summary>Lookup and display filters</summary>
+    <summary>Filters</summary>
     <label><input id="includeArchived" type="checkbox"> Include archived threads</label>
     <label><input id="includeBranch" type="checkbox"> Include branch matches</label>
     <label><input id="listBadges" type="checkbox"> Show badges on PR lists</label>
@@ -24,11 +23,7 @@
     <select id="sort"><option value="active">Active first</option><option value="recent">Recent activity</option><option value="title">Thread title</option><option value="branch">Branch</option><option value="computer">Computer</option></select>
     <p id="settings-error" role="status"></p>
   </details>
-  <button id="retry" type="button">Refresh</button>
-  <p><a id="lookup-link" target="_blank" rel="noopener">Find threads by repository or PR URL →</a></p>
-  <p><a id="settings-link" target="_blank" rel="noopener">Computer settings →</a></p>
-  <p class="hint">Linked threads appear below the title of a GitHub pull request. Click a link to open T3 Code.</p>
-  <p class="hint">Reads PR links on this computer and configured SSH computers. No GitHub token or cloud upload.</p>
+  <footer><button id="retry" type="button">Refresh</button><a id="lookup-link" target="_blank" rel="noopener">Find threads</a><a id="settings-link" target="_blank" rel="noopener">Settings</a></footer>
   <script src="common.js"></script>
   <script src="ui.js"></script>
   <script src="settings.js"></script>

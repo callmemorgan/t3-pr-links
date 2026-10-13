@@ -1,12 +1,10 @@
 (() => {
   const ID = "t3-pr-links";
-  const REFRESH_MS = 30000;
   let currentKey = null;
   let currentQuery = null;
   let generation = 0;
   let result = null;
   let inFlight = false;
-  let lookupTime = 0;
   let scheduled = false;
   let lastChecked = 0;
   let pendingLookup = null;
@@ -111,17 +109,15 @@
       generation++;
       result = null;
       inFlight = false;
-      lookupTime = 0;
       removePanel();
       globalThis.T3Badge?.set("none");
     }
     if (!key) return;
     render();
     if (inFlight) return pendingLookup;
-    if (!force && Date.now() - lookupTime < REFRESH_MS) return;
+    if (!force && result) return;
     const requestGeneration = generation;
     inFlight = true;
-    lookupTime = Date.now();
     render();
     pendingLookup = (async () => { try {
       const response = await chrome.runtime.sendMessage(branch
@@ -132,7 +128,7 @@
         void sync(true);
         return;
       }
-      result = response;
+      result = response || { ok: false, error: "No response from the helper. Refresh to try again." };
       lastChecked = Date.now();
     } catch {
       if (requestGeneration !== generation) return;
@@ -165,9 +161,8 @@
   for (const event of ["turbo:load", "turbo:render", "pjax:end", "popstate"]) {
     window.addEventListener(event, schedule);
   }
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) void sync(true); });
-  window.addEventListener("focus", () => void sync(true));
-  setInterval(() => { if (!document.hidden) void sync(); }, REFRESH_MS);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) void sync(); });
+  window.addEventListener("focus", () => void sync());
   T3Settings.subscribe(() => void sync());
   void sync();
 })();

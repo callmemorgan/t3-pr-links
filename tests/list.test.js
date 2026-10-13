@@ -95,3 +95,22 @@ test("replaced rows immediately before a batch reply trigger a fresh lookup", as
   await tick();
   assert.equal(dom.window.document.querySelector(".t3-pr-list-badge").previousElementSibling.href, "https://github.com/owner/repo/pull/44");
 });
+
+test("returning to an old PR list reuses its batch until popup Refresh or the visible PRs change", async t => {
+  let handler, calls = 0;
+  const dom = list(t, async () => { calls++; return { ok: true, matches: { "owner/repo#42": [thread] } }; }, {
+    id: "test-id", getURL: p => `chrome-extension://test-id/${p}`, onMessage: { addListener(fn) { handler = fn; } },
+  });
+  await tick();
+  dom.window.Date.now = () => Date.now() + 300000;
+  dom.window.dispatchEvent(new dom.window.Event("focus"));
+  dom.window.document.dispatchEvent(new dom.window.Event("visibilitychange"));
+  await tick();
+  assert.equal(calls, 1);
+  await new Promise(done => handler({ type: "listContext", force: true }, { id: "test-id", url: "chrome-extension://test-id/popup.html" }, done));
+  assert.equal(calls, 2);
+  dom.window.document.querySelector("h3 a").href = "/owner/repo/pull/44";
+  dom.window.dispatchEvent(new dom.window.Event("focus"));
+  await tick();
+  assert.equal(calls, 3);
+});

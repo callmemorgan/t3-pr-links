@@ -53,7 +53,7 @@
     return group;
   }
 
-  function threadRow(document, thread, { single = false, actions = false } = {}) {
+  function threadRow(document, thread, { single = false, actions = false, badges = true } = {}) {
     const href = T3Pr.threadUrl(thread.environmentId, thread.id);
     if (!href) return null;
     const row = element(document, "div", "t3-pr-thread-row");
@@ -64,7 +64,7 @@
     const computer = ` · ${thread.computer || "This computer"}`;
     if (single) row.append(element(document, "span", "t3-pr-thread-title", `${thread.title || "Untitled thread"}${computer}`));
     else row.append(element(document, "span", "t3-pr-thread-title", thread.computer || "This computer"));
-    if (["branch", "checkout"].includes(thread.matchType) || !single) {
+    if (["branch", "checkout"].includes(thread.matchType) || (!single && badges)) {
       const badge = element(document, "span", "t3-pr-match-kind", matchLabel(thread));
       badge.title = matchExplanation(thread);
       row.append(badge);

@@ -70,3 +70,33 @@ test("popup groups current-list threads by PR using the shared batch context", a
   assert.equal(dom.window.document.querySelector("#threads .t3-pr-thread-link").href, "t3code://threads/mini/t1");
   assert.equal(requests.length, 2);
 });
+
+test("compact popup keeps an explicitly linked thread prominent and hides redundant source details", async t => {
+  const { dom } = popup(t, {
+    pr: { repository: "owner/repo", number: 42 }, head: { repository: "owner/repo", branch: "feature/work" },
+    result: { ok: true, threads: [{ id: "t1", environmentId: "mini", title: "Work", computer: "Mini", matchType: "linked" }],
+      environments: [{ name: "This computer", ok: true }, { name: "Mini", ok: true }] },
+  });
+  await tick();
+  const document = dom.window.document;
+  assert.equal(document.getElementById("connection").dataset.state, "connected");
+  assert.equal(document.getElementById("details").textContent, "2 computers connected");
+  assert.equal(document.getElementById("details").title, "This computer, Mini");
+  assert.equal(document.getElementById("context-branch").hidden, true);
+  assert.equal(document.querySelector(".t3-pr-match-kind"), null);
+  assert.equal(document.querySelector("#threads a").href, "t3code://threads/mini/t1");
+  assert.ok(document.querySelector(".t3-pr-copy button"));
+});
+
+test("compact popup still identifies an unavailable computer while retaining available matches", async t => {
+  const { dom } = popup(t, {
+    pr: { repository: "owner/repo", number: 42 }, result: { ok: true,
+      threads: [{ id: "t1", environmentId: "local", title: "Local work", matchType: "linked" }],
+      environments: [{ name: "This computer", ok: true }, { name: "Mini", ok: false, error: "Offline" }] },
+  });
+  await tick();
+  const document = dom.window.document;
+  assert.equal(document.getElementById("connection").dataset.state, "attention");
+  assert.equal(document.getElementById("details").textContent, "Mini: Offline");
+  assert.ok(document.querySelector("#threads a"));
+});

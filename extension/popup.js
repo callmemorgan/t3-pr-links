@@ -28,9 +28,11 @@ function showContext(context) {
     : context.branch ? `https://github.com/${repository}/tree/${encodeURIComponent(context.branch.branch)}` : context.list ? context.list.url : `https://github.com/${repository}`;
   title.target = "_blank";
   title.rel = "noopener";
-  document.getElementById("context-branch").textContent = context.branch ? `Branch: ${context.branch.branch}`
-    : context.head ? `Source: ${context.head.repository} · ${context.head.branch}` : context.pr ? "Source branch unavailable on this page."
-      : context.list ? "T3 threads linked to PRs in the current list." : "Explore T3 work for this repository.";
+  const branchHint = document.getElementById("context-branch");
+  const inferred = (context.result?.threads || []).some(thread => ["branch", "checkout"].includes(thread.matchType));
+  branchHint.textContent = context.branch ? context.branch.branch : context.head && inferred
+    ? `${context.head.repository !== repository ? `${context.head.repository} · ` : ""}${context.head.branch}` : "";
+  branchHint.hidden = !branchHint.textContent;
   document.getElementById("browse").href = `${chrome.runtime.getURL("threads.html")}${repository ? `?repository=${encodeURIComponent(repository)}` : ""}`;
   const allThreads = context.list ? (context.pullRequests || []).flatMap(pr => pr.threads) : context.result?.threads || [];
   const threads = T3Settings.sort(T3Settings.filter(allThreads));
@@ -48,12 +50,12 @@ function showContext(context) {
       link.rel = "noopener";
       link.title = pr.title;
       group.append(link);
-      for (const thread of visible) { const row = T3Ui.threadRow(document, thread, { actions: true }); if (row) group.append(row); }
+      for (const thread of visible) { const row = T3Ui.threadRow(document, thread, { actions: true, badges: false }); if (row) group.append(row); }
       container.append(group);
     }
   } else {
     for (const thread of threads) {
-      const row = T3Ui.threadRow(document, thread, { actions: true });
+      const row = T3Ui.threadRow(document, thread, { actions: true, badges: false });
       if (row) container.append(row);
     }
   }
@@ -63,8 +65,10 @@ async function check(force = false) {
   const button = document.getElementById("retry");
   const status = document.getElementById("status");
   const details = document.getElementById("details");
+  const connection = document.getElementById("connection");
   button.disabled = true;
-  status.textContent = "Checking your T3 Code data…";
+  connection.dataset.state = "checking";
+  status.textContent = "Checking connections…";
   details.textContent = "";
   try {
     await T3Settings.ready;
@@ -83,12 +87,15 @@ async function check(force = false) {
     const warnings = response.lookupWarnings || [];
     const count = context?.list ? (context.pullRequests || []).filter(pr => T3Settings.filter(pr.threads).length).length
       : context?.result ? T3Settings.filter(response.threads || []).length : response.threadCount;
-    status.textContent = unavailable.length ? "Some computers are unavailable" : context?.list ? `${count} linked ${count === 1 ? "PR" : "PRs"}`
+    connection.dataset.state = unavailable.length || warnings.length ? "attention" : "connected";
+    status.textContent = unavailable.length ? "Some computers unavailable" : context?.list ? `${count} linked ${count === 1 ? "PR" : "PRs"}`
       : context?.result ? `${count} matching ${count === 1 ? "thread" : "threads"}` : "Connected to T3 Code";
-    details.textContent = `Reading: ${available.map(environment => environment.name).join(", ")}.`;
-    if (unavailable.length) details.textContent += ` Unavailable: ${unavailable.map(environment => `${environment.name}: ${environment.error}`).join("; ")}`;
+    details.textContent = `${available.length} ${available.length === 1 ? "computer" : "computers"} connected`;
+    details.title = available.map(environment => environment.name).join(", ");
+    if (unavailable.length) details.textContent = unavailable.map(environment => `${environment.name}: ${environment.error || "unavailable"}`).join("; ");
     if (warnings.length) { status.textContent = "Lookup was incomplete"; details.textContent += ` ${warnings.join(" ")}`; }
   } catch (error) {
+    connection.dataset.state = "attention";
     status.textContent = "Connection needs attention";
     details.textContent = error.message;
   } finally { button.disabled = false; }

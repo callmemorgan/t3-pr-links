@@ -3,7 +3,6 @@
   let signature = null;
   let version = 0;
   let result = null;
-  let lastChecked = 0;
   let pending = false;
   let pendingLookup = null;
   let completedAt = 0;
@@ -69,7 +68,6 @@
       version++;
       pending = false;
       result = null;
-      lastChecked = 0;
       completedAt = 0;
       removeBadges();
       globalThis.T3Badge?.set("none");
@@ -77,17 +75,16 @@
     if (!signature) return;
     if (T3Settings.get().listBadges) render(entries);
     if (pending) return pendingLookup;
-    if (!force && Date.now() - lastChecked < 30000) return;
+    if (!force && result) return;
     const requestVersion = version;
     const requestSignature = signature;
     pending = true;
-    lastChecked = Date.now();
     pendingLookup = (async () => { try {
       const urls = [...new Set(entries.map(entry => entry.link.href))];
       const response = await chrome.runtime.sendMessage({ type: "batchLookup", urls });
       if (requestVersion !== version || !T3Pr.isPullRequestList(location.href)) return;
       if (signatureFor(targets()) !== requestSignature) return sync(true, forPopup);
-      result = response;
+      result = response || { ok: false, error: "No response from the helper. Refresh to try again." };
       completedAt = Date.now();
       if (T3Settings.get().listBadges) render(targets());
     } catch {
@@ -122,9 +119,8 @@
   }
   new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
   for (const event of ["turbo:load", "turbo:render", "pjax:end", "popstate"]) window.addEventListener(event, schedule);
-  window.addEventListener("focus", () => void sync(true));
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) void sync(true); });
-  setInterval(() => { if (!document.hidden) void sync(); }, 30000);
+  window.addEventListener("focus", () => void sync());
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) void sync(); });
   T3Settings.subscribe(() => void sync());
   void sync();
 })();
