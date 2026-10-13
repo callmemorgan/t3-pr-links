@@ -55,7 +55,6 @@
       else anchor.insertAdjacentElement("afterend", panel);
     }
     panel.dataset.signature = signature;
-    const wasExpanded = panel.querySelector("details")?.open || false;
     panel.replaceChildren();
     const mark = document.createElement("span");
     mark.className = "t3-pr-mark";
@@ -66,6 +65,9 @@
     for (const thread of threads) {
       const row = T3Ui.threadRow(document, thread, { single: threads.length === 1 });
       if (row) links.append(row);
+      if (["branch", "checkout"].includes(thread.matchType)) {
+        links.append(T3Ui.element(document, "p", "t3-pr-source-branch", `Matching branch: ${thread.matchedBranch || thread.branch}`));
+      }
     }
     body.append(links);
     if (hiddenCount) {
@@ -87,11 +89,6 @@
       body.append(warning);
     }
     for (const text of warnings) body.append(T3Ui.element(document, "p", "t3-pr-warning", text));
-    if (threads.length) {
-      const details = T3Ui.threadDetails(document, threads);
-      details.open = wasExpanded;
-      body.append(details);
-    }
     const controls = T3Ui.element(document, "div", "t3-pr-controls");
     const refresh = T3Ui.element(document, "button", "t3-pr-button", "Refresh");
     refresh.type = "button";

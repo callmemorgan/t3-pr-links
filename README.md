@@ -48,7 +48,7 @@ Remote computers are explicitly configured; the extension does not automatically
 
 Links use T3 Code's `t3code://threads/<environment-id>/<thread-id>` desktop scheme. T3 Code must be installed and recognize that environment. The extension works on github.com, including private PRs and their Files, Commits, and Checks tabs. GitHub Enterprise domains are not currently included.
 
-While a GitHub tab is visible, links refresh every 30 seconds and when you return to the tab. GitHub navigation updates the displayed links automatically. **Refresh** checks again immediately, and **Match details** explains each result, its recorded branch, archive state, and last thread update. Unavailable computers are called out on the PR so an incomplete search does not look like a complete search. PRs with no matching thread and no connection problems display no extra panel.
+While a GitHub tab is visible, links refresh every 30 seconds and when you return to the tab. GitHub navigation updates the displayed links automatically. **Refresh** checks again immediately. The PR panel shows the thread link, title, and computer; inferred matches also show the matching branch and an explanatory badge. Workspace paths, related PRs, copying, and checkout checks live in the thread browser or popup. Unavailable computers are called out on the PR so an incomplete search does not look like a complete search. PRs with no matching thread and no connection problems display no extra panel.
 
 The toolbar popup shows matches and source-branch information for the current PR, with direct T3 links and its own Refresh button. On other pages it shows connection diagnostics. It communicates with the existing GitHub content script and needs no additional tab-reading permissions.
 
@@ -58,11 +58,11 @@ Branch lookups also work on repository home pages, branch folders, and files. Th
 
 The popup’s **Lookup and display filters** lets you include/exclude archived threads or branch matches, select a computer, and turn list badges off. Preferences are saved locally in Chrome and update open GitHub pages immediately. If filters hide all matches, the page offers **Show all threads** so matches do not disappear without explanation. Filters affect display, not which configured computers are checked.
 
-**Copy link** in match details or the popup copies the T3 desktop link. If the clipboard is unavailable, a selected text field lets you copy it manually.
+**Copy link** in the thread browser or popup copies the T3 desktop link. If the clipboard is unavailable, a selected text field lets you copy it manually.
 
 The popup links to a **Repository threads** browser. It finds threads associated with that GitHub repository through a linked PR or their workspace Git remote, including threads without a PR. Search the loaded results by thread title, branch, or project. Results show computer coverage and any limit (up to 200 threads); saved display filters apply. You can also enter a repository manually.
 
-**Check current checkout** in details or the repository browser reads Git’s current branch from that thread’s saved workspace. It distinguishes a matching branch, a different branch, detached HEAD, and a missing/unreadable workspace. The check runs only when clicked and never changes the checkout.
+**Check current checkout** in the thread browser reads Git’s current branch from that thread’s saved workspace. It distinguishes a matching branch, a different branch, detached HEAD, and a missing/unreadable workspace. The check runs only when clicked and never changes the checkout.
 
 The toolbar icon shows the visible match count on PR/branch pages, or the number of linked PRs on a list. An amber **!** means some computers could not be checked; its tooltip includes the count.
 
@@ -112,4 +112,8 @@ Use Node.js 22 or newer for the tests. GitHub Actions runs the suite on Linux. B
 
 For visual checks, run `python3 scripts/preview.py` and open the printed URL. Stop with Ctrl+C.
 
+The same preview server exposes `/pr.html` for the compact GitHub panel, `/popup.html`, and `/options.html`. Every preview uses sample data only.
+
 Version 1.2.0 adds branch and live-workspace lookup, list badges and list-aware popup, details/checkout checks, saved filtering and sorting, repository/manual-PR search, JSON link export, computer settings, toolbar counts, and the keyboard shortcut. Reload the installed extension in `chrome://extensions` after updates, then reload GitHub tabs. The popup shows the version Chrome actually loaded.
+
+Version 1.2.1 simplifies the GitHub panel to thread links, titles, computers, and matching branches for inferred results. Additional tools and workspace metadata remain in the popup and thread browser.

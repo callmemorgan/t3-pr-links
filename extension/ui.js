@@ -74,37 +74,6 @@
     return row;
   }
 
-  function threadDetails(document, threads) {
-    const details = element(document, "details", "t3-pr-details");
-    details.append(element(document, "summary", "", "Match details"));
-    for (const thread of threads) {
-      const entry = element(document, "div", "t3-pr-detail-entry");
-      entry.append(element(document, "strong", "", thread.title || "Untitled thread"));
-      entry.append(element(document, "p", "", matchExplanation(thread)));
-      const fields = [
-        ["Computer", thread.computer || "This computer"],
-        ["Recorded branch", thread.branch || "No recorded branch"],
-        ["State", thread.archived ? "Archived" : "Active thread"],
-      ];
-      if (thread.project) fields.push(["Project", thread.project]);
-      if (thread.matchedBranch) fields.push(["Workspace branch at lookup", thread.matchedBranch]);
-      if (thread.workspace) fields.push([thread.workspaceType === "worktree" ? "Worktree" : "Project workspace", thread.workspace]);
-      if (thread.updatedAt && Number.isFinite(Date.parse(thread.updatedAt))) fields.push(["Thread updated", new Date(thread.updatedAt).toLocaleString()]);
-      const list = element(document, "dl");
-      for (const [label, value] of fields) {
-        list.append(element(document, "dt", "", label), element(document, "dd", "", value));
-      }
-      entry.append(list);
-      const prs = pullRequestLinks(document, thread);
-      if (prs) entry.append(prs);
-      const copy = copyButton(document, thread);
-      if (copy) entry.append(copy);
-      entry.append(checkoutControl(document, thread));
-      details.append(entry);
-    }
-    return details;
-  }
-
   function checkoutControl(document, thread) {
     const container = element(document, "div", "t3-pr-checkout");
     const button = element(document, "button", "t3-pr-button", "Check current checkout");
@@ -150,5 +119,5 @@
     return container.childNodes.length ? container : null;
   }
 
-  root.T3Ui = { element, threadRow, threadDetails, matchLabel, matchExplanation, copyButton, pullRequestLinks, checkoutControl };
+  root.T3Ui = { element, threadRow, matchLabel, matchExplanation, copyButton, pullRequestLinks, checkoutControl };
 })(globalThis);

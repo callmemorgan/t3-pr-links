@@ -97,19 +97,17 @@ test("PR branch lookup reads the head repository including forks and excludes co
   assert.equal(headBranch(new JSDOM('<article><a href="/owner/repo/tree/main">main</a></article>').window.document), null);
 });
 
-test("manual refresh recovers from an offline computer and preserves expanded details", async t => {
+test("manual refresh recovers from an offline computer", async t => {
   let calls = 0;
   let data = { ...response, environments: [{ name: "Mac Mini", ok: false, error: "Offline" }] };
   const dom = fixture(t, async () => { calls++; return data; });
   await tick();
   const document = dom.window.document;
   assert.ok(document.querySelector("#t3-pr-links").textContent.includes("Could not check: Mac Mini"));
-  document.querySelector("#t3-pr-links details").open = true;
   data = { ...response, environments: [{ name: "Mac Mini", ok: true }] };
   document.querySelector('[data-action="refresh"]').click();
   await tick();
   assert.equal(calls, 2);
-  assert.equal(document.querySelector("#t3-pr-links details").open, true);
   assert.equal(document.querySelector(".t3-pr-warning"), null);
 });
 
@@ -272,6 +270,7 @@ test("copy links encode IDs and offer a selected field when the clipboard is una
   const dom = fixture(t, async () => ({ ok: true, threads: [{ id: "thread/one", environmentId: "env?one", title: "Copy me" }] }));
   await tick();
   const document = dom.window.document;
+  document.body.append(dom.window.T3Ui.copyButton(document, { id: "thread/one", environmentId: "env?one", title: "Copy me" }));
   document.querySelector(".t3-pr-copy button").click();
   await tick();
   const input = document.querySelector(".t3-pr-copy-value");
@@ -287,15 +286,21 @@ test("copy links encode IDs and offer a selected field when the clipboard is una
   assert.equal(document.querySelector(".t3-pr-copy-status").textContent, "Copied");
 });
 
-test("associated PR links remain valid GitHub links and workspace metadata is plain text", async t => {
-  const dom = fixture(t, async () => ({ ok: true, threads: [{ ...response.threads[0], project: "Project", workspace: "<img src=evil>", workspaceType: "worktree",
-    pullRequests: [{ repository: "Owner/Repo", number: 42 }, { repository: "evil/repo/extra", number: 4 }, { repository: "other/repo", number: 43 }] }] }));
+test("PR panel stays compact while associated PR links remain available to the thread browser", async t => {
+  const thread = { ...response.threads[0], project: "Project", workspace: "<img src=evil>", workspaceType: "worktree",
+    pullRequests: [{ repository: "Owner/Repo", number: 42 }, { repository: "evil/repo/extra", number: 4 }, { repository: "other/repo", number: 43 }] };
+  const dom = fixture(t, async () => ({ ok: true, threads: [thread] }));
   await tick();
   const document = dom.window.document;
+  const panel = document.getElementById("t3-pr-links");
+  assert.equal(panel.querySelector("details"), null);
+  assert.equal(panel.querySelector(".t3-pr-checkout"), null);
+  assert.equal(panel.textContent.includes(thread.workspace), false);
+  assert.equal(panel.textContent.includes("Project"), false);
+  document.body.append(dom.window.T3Ui.pullRequestLinks(document, thread));
   assert.equal(document.querySelectorAll(".t3-pr-associated-prs a").length, 2);
   assert.equal(document.querySelector(".t3-pr-associated-prs a").href, "https://github.com/owner/repo/pull/42");
   assert.equal(document.querySelector(".t3-pr-associated-prs a").rel, "noopener");
-  assert.ok(document.querySelector("#t3-pr-links details").textContent.includes("<img src=evil>"));
   assert.equal(document.querySelector("#t3-pr-links img"), null);
 });
 
@@ -307,6 +312,7 @@ test("current checkout is queried only when clicked and reports recorded-branch 
   });
   await tick();
   assert.equal(requests.length, 1);
+  dom.window.document.body.append(dom.window.T3Ui.checkoutControl(dom.window.document, response.threads[0]));
   dom.window.document.querySelector(".t3-pr-checkout button").click();
   await tick();
   assert.equal(requests[1].type, "checkoutLookup");
@@ -326,4 +332,11 @@ test("live workspace preferences requery while incomplete scans remain visible w
   await tick();
   assert.equal(requests.length, 2);
   assert.equal(requests[1].liveBranches, false);
+});
+
+test("workspace matches show the observed source branch rather than a stale recorded branch", async t => {
+  const dom = fixture(t, async () => ({ ok: true, threads: [{ ...response.threads[0], matchType: "checkout", branch: "old-branch", matchedBranch: "feature/current" }] }));
+  await tick();
+  assert.equal(dom.window.document.querySelector(".t3-pr-source-branch").textContent, "Matching branch: feature/current");
+  assert.ok(dom.window.document.querySelector(".t3-pr-match-kind").title.includes("currently checked out"));
 });
