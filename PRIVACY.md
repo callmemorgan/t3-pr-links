@@ -1,10 +1,10 @@
 # Privacy policy
 
-T3 PR Links is an independent community extension for [T3 Code](https://github.com/pingdotgg/t3code). It does not collect, sell, or share your data, and it doesn't send any data to the developer or to any third-party service.
+T3Code PR Links is an independent community extension for [T3 Code](https://github.com/pingdotgg/t3code), not affiliated with, endorsed by, or sponsored by T3 Code or its developers. It processes the information described below on your configured computers to find and open matching threads. It does not sell your data or send it to the developer, analytics services, or other third-party services.
 
 ## What the extension reads
 
-- **GitHub pages.** On github.com, the extension reads the repository name, pull request number, and source branch from the page you're viewing. It needs these to find matching T3 Code threads. It doesn't read page content beyond that, and it doesn't use a GitHub token.
+- **GitHub pages.** On github.com, the extension reads the current page URL and repository, pull request, and source branch information. For pull request lists, it also reads visible pull request links and titles. It uses this page context to find matching T3 Code threads. It does not maintain a browsing history or use a GitHub token.
 - **T3 Code data on your computers.** A local helper, which you install yourself, reads T3 Code's database in read-only mode. It reads thread titles, identifiers, project and workspace metadata, and pull request links. It does not read conversation messages or T3 Code credentials. When asked, it also reads the current Git branch of a thread's workspace.
 
 ## Where data goes

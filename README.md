@@ -1,8 +1,8 @@
-# T3 PR Links
+# T3Code PR Links
 
 A Chrome extension that adds **Open in T3 Code** below a GitHub pull request title when that PR is linked to a T3 Code thread on this computer or a configured remote computer. Multiple matching threads appear as separate links.
 
-An independent community extension for [T3 Code](https://github.com/pingdotgg/t3code). Licensed under MIT.
+An independent community extension for [T3 Code](https://github.com/pingdotgg/t3code), not affiliated with, endorsed by, or sponsored by T3 Code or its developers. Licensed under MIT.
 
 ## Install
 
@@ -18,7 +18,7 @@ python3 scripts/install.py
 
 Then:
 
-1. Install **T3 PR Links** from the Chrome Web Store.
+1. Install **T3Code PR Links** from the Chrome Web Store.
 2. Reload any GitHub tabs you already had open. The extension toolbar popup can check the connection.
 
 The installer copies the helper into your user application data directory, so you can delete the cloned folder afterwards and nothing needs to stay running. To update the helper, pull the latest version and run the installer again. Chrome may ask to open T3 Code the first time you click a thread link.
@@ -31,7 +31,7 @@ The extension also finds threads whose **recorded branch and Git repository** ma
 
 A branch match reflects T3's recorded branch and does not independently verify the current checkout or imply that the thread created the PR.
 
-The default data directory is `~/.t3/userdata`. To use another local T3 environment, reinstall with:
+The default data directory is `~/.t3/userdata`. To use another local T3 environment, change **T3 data directory on this computer** in the extension's Settings, or reinstall with:
 
 ```sh
 python3 scripts/install.py --userdata /path/to/t3/userdata
@@ -147,6 +147,8 @@ Version 1.4.1 deduplicates PR-list lookup/grouping and reports omitted rows or t
 Version 1.5.0 makes the popup’s branch name a shortcut to an exact branch lookup (see [What matches](#what-matches)).
 
 Version 1.5.1 fixes the extension message boundary so Settings, the thread browser, the branch shortcut, checkout checks, and saved-connection checks reach the helper when those pages open in a tab. The branch shortcut now appears whenever the PR’s source branch is known, keeps exact branch names, uses the standard link colour, and has one consistent tooltip. Unattended SSH lookups disable agent, X11, and port forwarding; render state no longer leaves lookup data in the GitHub page; the preview adds `/popup.html?fork=1`.
+
+Version 1.5.3 names the extension T3Code PR Links and uses the Chrome Web Store item's public key, so the unpacked extension and helper installer use the store ID. If you installed an earlier development version, pull the latest code, rerun `python3 scripts/install.py`, and reload the unpacked extension and GitHub tabs.
 
 ### Verification and review handoff
 

@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "T3 PR Links",
-  "version": "1.5.2",
+  "name": "T3Code PR Links",
+  "version": "1.5.3",
   "description": "Open linked T3 Code threads from this computer and configured SSH computers directly from GitHub pull requests.",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA+kcFOYnGtIB/gfJAjfo/OibH231SBpSHVUYrbGK7fjour7NGe142qQnK5RZ192zKI6DJgttAqnVO6ihXFKgHoK/Gasf+rEoug/mZvgIkIXyDS8oWSJEsvuZuWdNnKp793Q3CNfeKZi/XugAUBbN1Uelr11iY6jFcd/BVX1Uyl9UkM+MM8NaXsTBMNglSn3lwjwC9L6m0ux6mE8r56sRUJpTiVlmQjqLK18vaXPTbEJeGLntwWcMFgUHmxrYqZNc4Y/DYtKOUumr8GTBf3W5XXxhfnCacy0T3P/9xKHwrl0oZkMLHmKoZHYU6WdgBMOtWC4ti5MUm70LBpw2nmPviAwIDAQAB",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0eTemJykeW7LQGIrGnq3Ant6ZEAJRy/YqnPjeVVg/ZvSFhlSTOzxOEPIV5qDyebfqgXXCwds8pc4SwRFz7ac6P+aUcVYZenYOigy82UJsl8/BMaYLs5olWTMrseHCiA7BFogobBM28fV54dpgPdivptV32BwLq/TmxukIKeTQmAgA21BCnwJFAHuWKDrgPdRWmldjvp68KUDjjRL77c/PnxUFwXEDlBkWLtPru3uzLTHRpAiIEO1IGy5k6MaA1Sig5ZfC5i44DCKUavusmhfKIvQvRNc6xm6muv+aax6DBrgoOfICVk4/6UqLFHYhMTiv4mKMGCXvvkaOwvd75EF3wIDAQAB",
   "permissions": [
     "nativeMessaging",
     "storage"
@@ -13,7 +13,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "T3 PR Links"
+    "default_title": "T3Code PR Links"
   },
   "options_ui": { "page": "options.html", "open_in_tab": true },
   "commands": {
