@@ -14,6 +14,7 @@ async function currentPage(force) {
 const installedVersion = chrome.runtime.getManifest?.().version;
 if (installedVersion) document.getElementById("version").textContent = `v${installedVersion}`;
 document.getElementById("settings-link").href = chrome.runtime.getURL("options.html");
+document.getElementById("connect-link").href = chrome.runtime.getURL("options.html");
 const threadsUrl = chrome.runtime.getURL("threads.html");
 function threadsPage(query = {}) {
   const search = Object.entries(query).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&");
@@ -90,10 +91,11 @@ async function check(force = false) {
     const context = await currentPage(force);
     const shown = showContext(context);
     const response = context?.result || await chrome.runtime.sendMessage({ type: "status" });
+    document.getElementById("connect-link").hidden = response?.ok === true;
     if (!response?.ok) {
       const errors = response?.environments?.filter(environment => !environment.ok)
         .map(environment => `${environment.name}: ${environment.error}`).join("; ");
-      throw new Error(errors || response?.error || "Could not reach the local helper.");
+      throw new Error(errors || response?.error || "Could not reach T3 Code.");
     }
     const environments = response.environments || [{ name: "This computer", ok: true }];
     updateFilters(environments);

@@ -53,7 +53,3 @@ class InstallTests(unittest.TestCase):
                 installer.main()
             self.assertEqual(list(registration.iterdir()), [])
             self.assertFalse(installed.exists() or legacy.exists())
-
-    def test_helper_name_matches_the_extension(self):
-        background = (Path(__file__).resolve().parents[1] / "extension/background.js").read_text()
-        self.assertIn(f'const HOST = "{installer.NAME}";', background)

@@ -1,19 +1,22 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>T3 computer settings</title><link rel="stylesheet" href="threads.css"><link rel="stylesheet" href="options.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Connect to T3 Code</title><link rel="stylesheet" href="threads.css"><link rel="stylesheet" href="options.css"></head>
 <body><main>
-  <header><span class="mark">T3</span><div><h1>Computer settings</h1><p>Choose the T3 environments to check.</p></div></header>
+  <header><span class="mark" aria-hidden="true">T3</span><div><h1>Connect to T3 Code</h1><p>Choose the endpoint where your T3 Code server is running.</p></div></header>
+  <p class="hint">Keep T3 Code open. In T3’s <strong>Settings → Connections → Authorized clients</strong>, create a pairing code with permission to read threads, then paste it below.</p>
   <form id="settings-form">
-    <label for="userdata">T3 data directory on this computer</label><input id="userdata" required maxlength="4096" placeholder="~/.t3/userdata" disabled>
-    <h2>SSH computers</h2>
-    <p class="hint">Use existing SSH aliases or hostnames. Connections use your saved SSH keys and known hosts. No passwords or T3 credentials are stored here.</p>
-    <div id="computers"></div>
-    <button id="add" type="button" disabled>Add computer</button>
-    <div class="actions"><button id="save" type="submit" disabled>Save computers</button><button id="test" type="button" disabled>Check saved connections</button></div>
+    <label for="endpoint">Endpoint URI</label><input id="endpoint" type="url" required maxlength="2048" value="http://127.0.0.1:3773" placeholder="http://127.0.0.1:3773" aria-describedby="endpoint-hint" disabled>
+    <p id="endpoint-hint" class="hint">Use your preferred local or remote T3 server address. The desktop app usually starts on port 3773; use the port shown in T3 if it differs. Use HTTPS for remote servers.</p>
+    <label for="pairing-code">Pairing code</label><input id="pairing-code" type="password" maxlength="8192" autocomplete="off" spellcheck="false" aria-describedby="pairing-hint" disabled>
+    <p id="pairing-hint" class="hint">The extension requests read-only thread access. A fresh code is required for a new endpoint or to renew an expired connection.</p>
+    <label for="name">Display name <span class="hint">(optional)</span></label><input id="name" maxlength="200" placeholder="This computer" disabled>
+    <div class="actions"><button id="save" type="submit" disabled>Connect</button><button id="cancel-edit" type="button" hidden>Cancel edit</button></div>
   </form>
-  <p id="status" role="status">Loading configuration…</p>
-  <button id="reload-config" type="button" hidden>Retry loading settings</button>
-  <div id="connections"></div>
-  <p class="hint">Saving changes only the extension’s lookup configuration. It does not modify T3 data, install anything remotely, or import T3’s encrypted connection catalog. Open GitHub pages pick up saved computer changes on their next refresh.</p>
-</main><script src="common.js"></script><script src="ui.js"></script><script src="options.js"></script></body>
+  <p id="status" role="status">Loading connections…</p>
+  <button id="reload-config" type="button" hidden>Retry loading connections</button>
+  <section aria-labelledby="saved-title"><h2 id="saved-title">Saved connections</h2><div id="computers"></div>
+    <button id="test" type="button" disabled>Check saved connections</button><div id="connections"></div>
+  </section>
+  <p class="hint">Chrome will ask for access to the endpoint you choose. Your access token stays in this Chrome profile. Removing a connection forgets that token; you can also revoke the client in T3’s settings.</p>
+</main><script src="common.js"></script><script src="ui.js"></script><script src="api.js"></script><script src="options.js"></script></body>
 </html>

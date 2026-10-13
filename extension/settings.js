@@ -23,7 +23,13 @@
   }
 
   const storage = root.chrome?.storage;
-  const ready = storage?.local ? storage.local.get("preferences").then(data => apply(data.preferences)).catch(() => {}) : Promise.resolve();
+  const contentScript = root.location?.protocol === "https:";
+  const ready = contentScript ? root.chrome.runtime.sendMessage({ type: "getPreferences" }).then(data => {
+    if (data?.ok) apply(data.preferences);
+  }).catch(() => {}) : storage?.local ? storage.local.get("preferences").then(data => apply(data.preferences)).catch(() => {}) : Promise.resolve();
+  if (contentScript) root.chrome.runtime.onMessage?.addListener((message, sender) => {
+    if (sender.id === root.chrome.runtime.id && !sender.tab && message?.type === "preferencesChanged") apply(message.preferences);
+  });
   storage?.onChanged?.addListener((changes, area) => {
     if (area === "local" && changes.preferences) apply(changes.preferences.newValue);
   });
@@ -31,7 +37,10 @@
   async function update(patch) {
     await ready;
     const next = normalize({ ...values, ...patch });
-    if (storage?.local) await storage.local.set({ preferences: next });
+    if (contentScript) {
+      const response = await root.chrome.runtime.sendMessage({ type: "updatePreferences", patch: next });
+      if (!response?.ok) throw new Error("Could not save display preferences.");
+    } else if (storage?.local) await storage.local.set({ preferences: next });
     apply(next);
   }
 

@@ -89,7 +89,7 @@
       const response = await chrome.runtime.sendMessage({ type: "batchLookup", urls });
       if (requestVersion !== version || !T3Pr.isPullRequestList(location.href)) return;
       if (signatureFor(targets()) !== requestSignature) return sync(true, forPopup);
-      result = response || { ok: false, error: "No response from the helper. Refresh to try again." };
+      result = response || { ok: false, error: "No response from T3 Code. Refresh to try again." };
       if (entries.truncated) result = { ...result, truncated: true, lookupWarnings: [...(result.lookupWarnings || []),
         "Only the first 100 PR rows were checked. Narrow the GitHub list to check other PRs."] };
       completedAt = Date.now();
@@ -108,7 +108,7 @@
   chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
     if (message?.type !== "listContext" || sender.id !== chrome.runtime.id
         || sender.url !== chrome.runtime.getURL("popup.html") || !T3Pr.isPullRequestList(location.href)) return false;
-    void sync(message.force === true, true).then(() => {
+    void (pending && pendingLookup ? pendingLookup : sync(message.force === true, true)).then(() => {
       if (!T3Pr.isPullRequestList(location.href)) { sendResponse(null); return; }
       const entries = targets();
       sendResponse({ list: { url: location.href }, repository: T3Pr.pageContext(document, location.href).repository,

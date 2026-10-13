@@ -95,7 +95,7 @@
           status.textContent = `Current checkout: ${checkout.branch}${checkout.matchesRecorded === true ? " · Matches the recorded branch." : checkout.matchesRecorded === false ? " · Differs from the recorded branch." : ""}`;
         } else if (checkout.state === "detached") status.textContent = "Current checkout is a detached HEAD.";
         else status.textContent = checkout.error || "The workspace could not be checked.";
-      } catch { status.textContent = "The helper is unavailable. Please try again."; }
+      } catch { status.textContent = "The T3 connection is unavailable. Please try again."; }
       finally { button.disabled = false; }
     });
     container.append(button, status);

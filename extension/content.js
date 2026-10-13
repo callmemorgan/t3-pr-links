@@ -131,7 +131,7 @@
         void sync(true);
         return;
       }
-      result = response || { ok: false, error: "No response from the helper. Refresh to try again." };
+      result = response || { ok: false, error: "No response from T3 Code. Refresh to try again." };
       lastChecked = Date.now();
     } catch {
       if (requestGeneration !== generation) return;
@@ -145,7 +145,7 @@
   chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
     if (message?.type !== "pageContext" || sender.id !== chrome.runtime.id
         || sender.url !== chrome.runtime.getURL("popup.html")) return false;
-    void sync(message.force === true).then(() => {
+    void (inFlight && pendingLookup ? pendingLookup : sync(message.force === true)).then(() => {
       const context = T3Pr.pageContext(document, location.href);
       sendResponse({ pr: context.pr, head: context.head, branch: context.branch,
         repository: context.repository,
@@ -166,6 +166,6 @@
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) void sync(); });
   window.addEventListener("focus", () => void sync());
-  T3Settings.subscribe(() => void sync());
+  T3Settings.subscribe(() => { render(); void sync(); });
   void sync();
 })();

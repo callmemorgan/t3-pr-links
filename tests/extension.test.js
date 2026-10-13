@@ -22,7 +22,7 @@ function fixture(t, sendMessage, html = '<main><div id="partial-discussion-heade
   });
   t.after(() => dom.window.close());
   Object.defineProperty(dom.window.document, "hidden", { get: () => false });
-  dom.window.chrome = { runtime: { ...runtime, sendMessage: message => message.type === "badge" ? Promise.resolve({ ok: true }) : sendMessage(message) } };
+  dom.window.chrome = { runtime: { ...runtime, sendMessage: message => message.type === "badge" ? Promise.resolve({ ok: true }) : message.type === "getPreferences" ? Promise.resolve({ ok: true, preferences: {} }) : message.type === "updatePreferences" ? Promise.resolve({ ok: true, preferences: message.patch }) : sendMessage(message) } };
   dom.window.eval(fs.readFileSync(path.join(extension, "common.js"), "utf8"));
   dom.window.eval(fs.readFileSync(path.join(extension, "ui.js"), "utf8"));
   dom.window.eval(fs.readFileSync(path.join(extension, "settings.js"), "utf8"));
@@ -191,11 +191,11 @@ test("background only permits matching GitHub lookups and popup diagnostics", as
   let handler;
   const calls = [];
   const context = {
-    URL, T3Pr: { parsePullRequest }, importScripts() {},
-    chrome: { runtime: {
+    URL, T3Pr: { parsePullRequest }, fetch() {}, WebSocket() {}, importScripts() {},
+    T3Api: { create() { return { storageReady: Promise.resolve(), async handle(request) { calls.push({ request }); return { ok: true, threads: [] }; } }; } },
+    chrome: { storage: { onChanged: { addListener() {} } }, runtime: {
       id: "test-id", getURL: p => `chrome-extension://test-id/${p}`,
-      onMessage: { addListener(fn) { handler = fn; } },
-      async sendNativeMessage(host, request) { calls.push({ host, request }); return { ok: true, threads: [] }; },
+      onInstalled: { addListener() {} }, onMessage: { addListener(fn) { handler = fn; } },
     } },
   };
   vm.runInNewContext(fs.readFileSync(path.join(extension, "background.js"), "utf8"), context);

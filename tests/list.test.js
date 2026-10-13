@@ -11,7 +11,7 @@ function list(t, sendMessage, runtime = {}) {
     url: "https://github.com/owner/repo/pulls", runScripts: "outside-only", pretendToBeVisual: true,
   });
   t.after(() => dom.window.close());
-  dom.window.chrome = { runtime: { ...runtime, sendMessage: message => message.type === "badge" ? Promise.resolve({ ok: true }) : sendMessage(message) } };
+  dom.window.chrome = { runtime: { ...runtime, sendMessage: message => message.type === "badge" ? Promise.resolve({ ok: true }) : message.type === "getPreferences" ? Promise.resolve({ ok: true, preferences: {} }) : message.type === "updatePreferences" ? Promise.resolve({ ok: true, preferences: message.patch }) : sendMessage(message) } };
   for (const file of ["common.js", "ui.js", "settings.js", "badge.js", "list.js"]) dom.window.eval(fs.readFileSync(path.join(extension, file), "utf8"));
   return dom;
 }

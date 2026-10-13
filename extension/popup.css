@@ -1,5 +1,6 @@
 :root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { width: 360px; padding: 16px; margin: 0; background: light-dark(#fff, #19171d); color: light-dark(#27242c, #f0edf4); font-size: 12px; line-height: 1.5; }
 header { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; }
 .mark { display: grid; place-items: center; width: 28px; height: 28px; background: #6838d9; color: #fff; font-size: 13px; font-weight: 800; border-radius: 7px; letter-spacing: -.5px; }

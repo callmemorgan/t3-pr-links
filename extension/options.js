@@ -2,98 +2,121 @@ const computerContainer = document.getElementById("computers");
 const status = document.getElementById("status");
 let loaded = false;
 let busy = false;
+let editingId = null;
+let saved = [];
 
 function updateControls() {
-  for (const id of ["add", "save", "test", "userdata"]) document.getElementById(id).disabled = !loaded || busy;
-  document.querySelectorAll(".computer input, .computer button").forEach(input => { input.disabled = busy; });
-  if (computerContainer.children.length >= 12) document.getElementById("add").disabled = true;
+  for (const id of ["save", "test", "endpoint", "pairing-code", "name", "cancel-edit"]) document.getElementById(id).disabled = !loaded || busy;
+  document.querySelectorAll(".computer button").forEach(button => { button.disabled = busy; });
+  document.getElementById("test").disabled = !loaded || busy || !saved.length;
+  document.getElementById("save").textContent = busy ? "Connecting…" : editingId ? "Save connection" : "Connect";
 }
-
-function addComputer(remote = {}) {
-  if (computerContainer.children.length >= 12) return;
-  const row = T3Ui.element(document, "fieldset", "computer");
-  row.append(T3Ui.element(document, "legend", "", "Remote computer"));
-  for (const [key, label, placeholder, initial] of [
-    ["name", "Display name", "Mac Mini", remote.name || ""],
-    ["host", "SSH alias or hostname", "mac-mini", remote.host || ""],
-    ["userdata", "Remote T3 data directory", "~/.t3/userdata", remote.userdata || "~/.t3/userdata"],
-  ]) {
-    const input = T3Ui.element(document, "input");
-    input.dataset.field = key;
-    input.value = initial;
-    input.placeholder = placeholder;
-    input.maxLength = key === "userdata" ? 4096 : 200;
-    input.required = true;
-    const wrapper = T3Ui.element(document, "label", "", label);
-    wrapper.append(input);
-    row.append(wrapper);
-  }
-  const remove = T3Ui.element(document, "button", "", "Remove computer");
-  remove.type = "button";
-  remove.addEventListener("click", () => { row.remove(); updateControls(); document.getElementById("add").focus(); });
-  row.append(remove);
-  computerContainer.append(row);
+function resetForm() {
+  editingId = null;
+  document.getElementById("endpoint").value = "http://127.0.0.1:3773";
+  document.getElementById("pairing-code").value = "";
+  document.getElementById("name").value = "";
+  document.getElementById("cancel-edit").hidden = true;
   updateControls();
-  return row;
 }
-
-function showConfig(config) {
-  document.getElementById("userdata").value = config.userdata;
-  computerContainer.replaceChildren();
-  for (const remote of config.sshHosts || []) addComputer(remote);
-}
-
 async function request(message) {
   const response = await chrome.runtime.sendMessage(message);
-  if (!response?.ok) throw new Error(response?.error || "The local T3 helper is unavailable. Set it up using github.com/callmemorgan/t3code-pr-links#install, then try again.");
+  if (!response?.ok) throw new Error(response?.error || "The connection could not be saved. Please try again.");
   return response;
 }
-
+function showConfig(config) {
+  saved = config.connections || [];
+  computerContainer.replaceChildren();
+  if (!saved.length) computerContainer.append(T3Ui.element(document, "p", "hint", "No connections yet. Enter your endpoint URI and pairing code above."));
+  for (const connection of saved) {
+    const row = T3Ui.element(document, "article", "computer");
+    row.append(T3Ui.element(document, "h3", "", connection.name));
+    row.append(T3Ui.element(document, "p", "endpoint", connection.endpoint));
+    if (connection.expiresAt) row.append(T3Ui.element(document, "p", "hint", `Pairing expires ${new Date(connection.expiresAt).toLocaleDateString()}`));
+    const actions = T3Ui.element(document, "div", "actions");
+    const edit = T3Ui.element(document, "button", "", "Edit / pair again");
+    edit.type = "button";
+    edit.addEventListener("click", () => {
+      editingId = connection.id;
+      document.getElementById("endpoint").value = connection.endpoint;
+      document.getElementById("name").value = connection.name;
+      document.getElementById("pairing-code").value = "";
+      document.getElementById("cancel-edit").hidden = false;
+      status.textContent = "Paste a fresh pairing code to renew access, or leave it blank to keep the existing pairing at this endpoint.";
+      updateControls();
+      document.getElementById("endpoint").focus();
+    });
+    const remove = T3Ui.element(document, "button", "", "Remove connection");
+    remove.type = "button";
+    remove.addEventListener("click", async () => {
+      busy = true;
+      updateControls();
+      try {
+        await request({ type: "removeConnection", id: connection.id });
+        if (editingId === connection.id) resetForm();
+        showConfig((await request({ type: "getConfig" })).config);
+        status.textContent = "Connection removed from this extension. You can revoke its client in T3’s settings too.";
+      } catch (error) { status.textContent = error.message; }
+      finally { busy = false; updateControls(); }
+    });
+    actions.append(edit, remove);
+    row.append(actions);
+    computerContainer.append(row);
+  }
+}
 async function loadConfig() {
   document.getElementById("reload-config").hidden = true;
   try {
-    const response = await request({ type: "getConfig" });
+    showConfig((await request({ type: "getConfig" })).config);
     loaded = true;
-    showConfig(response.config);
-    status.textContent = "Changes take effect after you save.";
+    status.textContent = saved.length ? "Choose a saved connection to edit, or connect another endpoint." : "Enter your endpoint URI and pairing code to get started.";
   } catch (error) { status.textContent = error.message; document.getElementById("reload-config").hidden = false; }
   updateControls();
 }
 document.getElementById("reload-config").addEventListener("click", () => void loadConfig());
-
-document.getElementById("add").addEventListener("click", () => addComputer()?.querySelector("input").focus());
+document.getElementById("cancel-edit").addEventListener("click", resetForm);
 document.getElementById("settings-form").addEventListener("submit", async event => {
   event.preventDefault();
   if (!loaded || busy) return;
-  const config = { userdata: document.getElementById("userdata").value.trim(), sshHosts: Array.from(computerContainer.children, row =>
-    Object.fromEntries(Array.from(row.querySelectorAll("input"), input => [input.dataset.field, input.value.trim()]))) };
+  let endpoint;
+  try { endpoint = T3Api.normalizeEndpoint(document.getElementById("endpoint").value); }
+  catch (error) { status.textContent = error.message; return; }
+  const pairingCode = document.getElementById("pairing-code").value.trim();
+  if (!pairingCode && (!editingId || saved.find(connection => connection.id === editingId)?.endpoint !== endpoint)) {
+    status.textContent = "Enter a pairing code from T3 Code’s Connections settings.";
+    document.getElementById("pairing-code").focus();
+    return;
+  }
   busy = true;
   updateControls();
+  status.textContent = "Connecting to T3 Code…";
   try {
-    const response = await request({ type: "saveConfig", config });
-    showConfig(response.config);
+    // Must happen in this user gesture; request only the chosen endpoint's site.
+    const allowed = await chrome.permissions.request({ origins: [T3Api.permissionOrigin(endpoint)] });
+    if (!allowed) throw new Error("Endpoint access was not granted. Click Connect to try again.");
+    const response = await request({ type: "saveConfig", config: { id: editingId, endpoint, pairingCode, name: document.getElementById("name").value.trim() } });
+    document.getElementById("pairing-code").value = "";
+    showConfig((await request({ type: "getConfig" })).config);
+    resetForm();
     document.getElementById("connections").replaceChildren();
-    status.textContent = response.warning ? `Saved, but ${response.warning}` : "Saved. Refresh a GitHub page to check the updated computers.";
+    status.textContent = response.warning ? `Pairing saved. ${response.warning}` : "Connected. Refresh your GitHub tabs to find matching T3 threads.";
   } catch (error) { status.textContent = error.message; }
   finally { busy = false; updateControls(); }
 });
-
 document.getElementById("test").addEventListener("click", async () => {
   if (!loaded || busy) return;
   busy = true;
   updateControls();
-  status.textContent = "Checking saved computers…";
+  status.textContent = "Checking saved endpoints…";
   const container = document.getElementById("connections");
   container.replaceChildren();
   try {
     const response = await chrome.runtime.sendMessage({ type: "status" });
-    status.textContent = response?.ok ? "Connection check finished." : response?.error || "The native helper is unavailable.";
+    status.textContent = response?.ok ? "Connection check finished." : response?.error || "The T3 endpoints could not be reached.";
     const list = T3Ui.element(document, "ul");
-    for (const environment of response?.environments || [{ name: "This computer", ok: response?.ok, error: response?.error }]) {
-      list.append(T3Ui.element(document, "li", "", `${environment.name}: ${environment.ok ? "connected" : environment.error || "unavailable"}`));
-    }
+    for (const environment of response?.environments || []) list.append(T3Ui.element(document, "li", "", `${environment.name}: ${environment.ok ? "connected" : environment.error || "unavailable"}`));
     container.append(list);
-  } catch { status.textContent = "The helper could not be reached. Set it up using github.com/callmemorgan/t3code-pr-links#install, then try again."; }
+  } catch { status.textContent = "The T3 endpoints could not be reached. Keep T3 running and check the saved URIs."; }
   finally { busy = false; updateControls(); }
 });
 void loadConfig();

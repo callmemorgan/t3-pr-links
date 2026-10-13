@@ -8,6 +8,7 @@ let checkedAt = null;
 const repositoryInput = document.getElementById("repository");
 const branchInput = document.getElementById("branch");
 const searchInput = document.getElementById("search");
+document.getElementById("settings-link").href = chrome.runtime.getURL?.("options.html") || "options.html";
 
 // Git branch names may contain Unicode spaces (NBSP, U+3000, ...) but never ASCII
 // whitespace, so only ASCII whitespace is trimmed from a branch.
@@ -90,7 +91,7 @@ async function load() {
       : query.branch ? { type: "directBranchLookup", repository, branch: query.branch, liveBranches: T3Settings.get().liveBranches }
       : { type: "repositoryLookup", repository });
     if (requestGeneration !== generation) return;
-    result = response || { ok: false, error: "No response from the helper." };
+    result = response || { ok: false, error: "No response from T3 Code." };
     loadedRepository = repository;
     loadedPullRequest = query.pr;
     loadedBranch = query.branch || null;
@@ -101,7 +102,7 @@ async function load() {
       ? `${environment.name}: connected` : `${environment.name}: ${environment.error || "unavailable"}`).join(" · ");
     if (result.lookupWarnings?.length) document.getElementById("coverage").textContent += ` ${result.lookupWarnings.join(" ")}`;
     render();
-  } catch { if (requestGeneration === generation) status.textContent = "The helper is unavailable. Check the extension connection and try again."; }
+  } catch { if (requestGeneration === generation) status.textContent = "The T3 connection is unavailable. Check the extension connection and try again."; }
   finally { if (requestGeneration === generation) document.getElementById("load").disabled = false; }
 }
 

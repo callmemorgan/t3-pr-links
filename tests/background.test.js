@@ -5,23 +5,48 @@ const path = require("node:path");
 const vm = require("node:vm");
 const T3Pr = require("../extension/common.js");
 const tick = () => new Promise(resolve => setImmediate(resolve));
-function background() {
+function background(config = { connections: [] }) {
   let handler;
+  let onInstalled;
+  let opened = 0;
   const calls = [];
   const badges = [];
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../extension/background.js"), "utf8"), {
-    URL, T3Pr, importScripts() {}, chrome: { action: {
+    URL, T3Pr, fetch() {}, WebSocket() {}, T3Api: { create() { return { storageReady: Promise.resolve(), async handle(request) { calls.push(request); return { ok: true, config }; } }; } },
+    T3Settings: { ready: Promise.resolve(), get: () => ({ includeArchived: true }), async update() {} },
+    importScripts() {}, chrome: { storage: { onChanged: { addListener() {} } }, action: {
       async setBadgeText(data) { badges.push(data); }, async setBadgeBackgroundColor() {}, async setTitle() {},
     }, runtime: {
       id: "test-id", getURL: p => `chrome-extension://test-id/${p}`,
-      onMessage: { addListener(fn) { handler = fn; } },
-      async sendNativeMessage(host, request) { calls.push(request); return { ok: true }; },
+      onInstalled: { addListener(fn) { onInstalled = fn; } }, onMessage: { addListener(fn) { handler = fn; } },
+      async openOptionsPage() { opened++; },
     } },
   });
-  return { handler, calls, badges };
+  return { handler, calls, badges, onInstalled: () => onInstalled(), opened: () => opened };
 }
 
-test("only the computer settings page can read or write helper configuration", async () => {
+test("install/update opens connection setup only when no endpoints are saved", async () => {
+  const empty = background();
+  empty.onInstalled();
+  await tick();
+  assert.equal(empty.opened(), 1);
+  const configured = background({ connections: [{ id: "local" }] });
+  configured.onInstalled();
+  await tick();
+  assert.equal(configured.opened(), 0);
+});
+
+test("GitHub content scripts can read display preferences but cannot access endpoint credentials", async () => {
+  const { handler, calls } = background();
+  const sender = { id: "test-id", url: "https://github.com/owner/repo/pull/42", tab: { url: "https://github.com/owner/repo/pull/42" } };
+  for (const type of ["getConfig", "saveConfig", "removeConnection"]) assert.equal(handler({ type }, sender, () => {}), false);
+  const result = await new Promise(resolve => handler({ type: "getPreferences" }, sender, resolve));
+  assert.equal(result.preferences.includeArchived, true);
+  assert.equal(calls.length, 0);
+  assert.equal(handler({ type: "getPreferences" }, { ...sender, url: "https://evil.test/" }, () => {}), false);
+});
+
+test("only the computer settings page can read or write T3 endpoint configuration", async () => {
   const { handler, calls } = background();
   const options = { id: "test-id", url: "chrome-extension://test-id/options.html" };
   const config = { userdata: "/data", sshHosts: [] };
@@ -47,7 +72,7 @@ test("branch lookup accepts only branches compatible with the sender's repositor
   assert.equal(calls[0].branch, "Feature/foo");
 });
 
-test("toolbar badges remain scoped to the sender's current GitHub page and never invoke native lookup", async () => {
+test("toolbar badges remain scoped to the sender's current GitHub page and never invoke API lookup", async () => {
   const { handler, calls, badges } = background();
   const sender = { id: "test-id", tab: { id: 9, url: "https://github.com/owner/repo/pull/42" } };
   const request = { type: "badge", url: sender.tab.url, kind: "pr", count: 2, problem: false };

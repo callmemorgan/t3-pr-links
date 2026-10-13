@@ -25,7 +25,7 @@ MOCK = r'''
   // Threads whose workspace remote is each repository, so branch lookups honour the repository.
   const repositoryThreads = {[sampleHead.repository]:threads,[forkHead.repository]:[forkThread]};
   const environments = [{name:"This computer",ok:true},{name:"Mac Mini",ok:true}];
-  let config = {userdata:"~/.t3/userdata",sshHosts:[{host:"mac-mini",name:"Mac Mini",userdata:"~/.t3/userdata"}]};
+  let config = {connections:[{id:"sample",name:"Mac Mini",endpoint:"https://mini.example.test",environmentId:"example-env",expiresAt:"2026-11-13T00:00:00Z"}]};
   const params = new URL(location.href).searchParams;
   const limited = params.get("limited") === "1";
   const response = {ok:true,threads,environments,...(limited ? {truncated:true,lookupWarnings:["Some matching threads were omitted because the result limit was reached."]} : {})};
@@ -33,13 +33,17 @@ MOCK = r'''
   window.chrome = {
     runtime:{getURL:path=>new URL(path,location.href).href,getManifest:()=>({version:PREVIEW_VERSION}),async sendMessage(message){
       if(message.type==="getConfig") return {ok:true,config};
-      if(message.type==="saveConfig") {config=message.config;return {ok:true,config};}
+      if(message.type==="saveConfig") {const connection={...message.config,id:message.config.id||"sample-new",environmentId:"example-env",name:message.config.name||"This computer",expiresAt:"2026-11-13T00:00:00Z"};delete connection.pairingCode;config.connections=[...config.connections.filter(item=>item.id!==connection.id),connection];return {ok:true,connection};}
+      if(message.type==="removeConnection") {config.connections=config.connections.filter(item=>item.id!==message.id);return {ok:true};}
+      if(message.type==="getPreferences") return {ok:true,preferences};
+      if(message.type==="updatePreferences") {preferences=message.patch;return {ok:true,preferences};}
       if(message.type==="checkoutLookup") return {ok:true,threads:[{id:message.threadId,environmentId:message.environmentId,checkout:{state:"branch",branch:threads[0].branch,matchesRecorded:true}}]};
       if(message.type==="status") return {ok:true,threadCount:3,environments};
       if(message.type==="lookup") return match("linked");
       if(message.type==="directBranchLookup") return {...response,threads:(repositoryThreads[message.repository]||[]).filter(thread=>thread.branch===message.branch).map(thread=>({...thread,matchType:"branch"}))};
       return response;
     }},
+    permissions:{async request(){return true;}},
     tabs:{async query(){return [{id:1}];},async sendMessage(){
       if(params.get("branch")==="1") return {branch:sampleHead,result:match("branch")};
       if(params.get("fork")==="1") return {pr:samplePr,head:forkHead,result:match("branch",forkThread)};

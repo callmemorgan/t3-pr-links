@@ -5,6 +5,32 @@ const path = require("node:path");
 const vm = require("node:vm");
 const source = fs.readFileSync(path.join(__dirname, "../extension/settings.js"), "utf8");
 
+test("GitHub preferences use the background proxy and reject spoofed preference notifications", async () => {
+  let onMessage;
+  const requests = [];
+  const context = { location: { protocol: "https:" }, chrome: { runtime: {
+    id: "extension-id", onMessage: { addListener(fn) { onMessage = fn; } },
+    async sendMessage(message) {
+      requests.push(message);
+      return { ok: true, preferences: message.patch || { includeArchived: false } };
+    },
+  }, storage: { local: {
+    get() { throw Error("Content scripts must not read credential storage"); },
+    set() { throw Error("Content scripts must not write credential storage"); },
+  } } } };
+  vm.runInNewContext(source, context);
+  await context.T3Settings.ready;
+  assert.equal(context.T3Settings.get().includeArchived, false);
+  await context.T3Settings.update({ includeBranch: false });
+  assert.deepEqual(requests.map(message => message.type), ["getPreferences", "updatePreferences"]);
+  onMessage({ type: "preferencesChanged", preferences: {} }, { id: "wrong-id" });
+  assert.equal(context.T3Settings.get().includeBranch, false);
+  onMessage({ type: "preferencesChanged", preferences: {} }, { id: "extension-id", tab: {} });
+  assert.equal(context.T3Settings.get().includeBranch, false);
+  onMessage({ type: "preferencesChanged", preferences: {} }, { id: "extension-id" });
+  assert.equal(context.T3Settings.get().includeBranch, true);
+});
+
 test("saved preferences filter by archive, match kind, and computer and follow local changes", async () => {
   let onChanged;
   const writes = [];

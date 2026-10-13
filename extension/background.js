@@ -1,6 +1,19 @@
-importScripts("common.js");
+importScripts("common.js", "api.js", "settings.js");
 
-const HOST = "com.callmemorgan.t3code_pr_links";
+const api = T3Api.create({ chrome, fetch, WebSocket });
+chrome.runtime.onInstalled.addListener(() => {
+  void api.handle({ type: "getConfig" }).then(result => {
+    if (result.ok && !result.config.connections.length) return chrome.runtime.openOptionsPage();
+  }).catch(() => {});
+});
+
+// Restricted local storage protects pairing tokens. Content scripts use these
+// messages for display preferences instead of gaining access to that storage.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local" || !changes.preferences) return;
+  void chrome.tabs.query({}).then(tabs => Promise.all(tabs.map(tab =>
+    chrome.tabs.sendMessage(tab.id, { type: "preferencesChanged", preferences: changes.preferences.newValue }).catch(() => {})))).catch(() => {});
+});
 
 // Settings (open_in_tab) and the thread browser run in tabs, so Chrome sets
 // sender.tab for them as well as for content scripts; it cannot tell them apart.
@@ -12,6 +25,17 @@ function isExtensionPage(sender, page) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return false;
+  const githubSender = (() => {
+    try { const url = new URL(sender.url); return url.origin === "https://github.com"; } catch { return false; }
+  })();
+  if (["getPreferences", "updatePreferences"].includes(message?.type) && (isExtensionPage(sender) || githubSender)) {
+    void api.storageReady.then(async () => {
+      await T3Settings.ready;
+      if (message.type === "updatePreferences") await T3Settings.update(message.patch);
+      return { ok: true, preferences: T3Settings.get() };
+    }).then(sendResponse, () => sendResponse({ ok: false, error: "Could not save display preferences." }));
+    return true;
+  }
   if (message?.type === "badge") {
     let actual, requested;
     try { actual = new URL(sender.tab?.url); requested = new URL(message.url); } catch { return false; }
@@ -36,8 +60,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   let request;
   if (message?.type === "status" && isExtensionPage(sender)) {
     request = { type: "status" };
-  } else if (["getConfig", "saveConfig"].includes(message?.type) && isExtensionPage(sender, "options.html")) {
-    request = message.type === "getConfig" ? { type: "getConfig" } : { type: "saveConfig", config: message.config };
+  } else if (["getConfig", "saveConfig", "removeConnection"].includes(message?.type) && isExtensionPage(sender, "options.html")) {
+    request = message.type === "getConfig" ? { type: "getConfig" } : message.type === "removeConnection"
+      ? { type: "removeConnection", id: message.id } : { type: "saveConfig", config: message.config };
   } else if (message?.type === "repositoryLookup" && isExtensionPage(sender)) {
     if (typeof message.repository !== "string" || !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(message.repository)) return false;
     request = { type: "repositoryLookup", host: "github.com", repository: message.repository.toLowerCase() };
@@ -87,9 +112,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   } else return false;
 
-  chrome.runtime.sendNativeMessage(HOST, request).then(
-    (result) => sendResponse(result),
-    () => sendResponse({ ok: false, error: "The local T3 helper is not installed or could not start. Set it up using github.com/callmemorgan/t3code-pr-links#install, then retry." }),
-  );
+  api.handle(request).then(sendResponse, () => sendResponse({ ok: false, error: "The T3 connection could not be checked. Open Settings and try again." }));
   return true;
 });
