@@ -1,6 +1,6 @@
 {
   "name": "t3-pr-links",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "private": true,
   "license": "MIT",
   "repository": {
@@ -10,7 +10,8 @@
   "description": "Open linked T3 Code threads from GitHub pull requests",
   "scripts": {
     "test": "node --test tests/*.test.js && python3 -m unittest discover -s tests -p 'test_*.py'",
-    "install-host": "python3 scripts/install.py"
+    "install-host": "python3 scripts/install.py",
+    "package": "python3 scripts/package.py"
   },
   "devDependencies": {
     "jsdom": "^26.1.0"

@@ -59,7 +59,7 @@ def main():
         for hostname in args.ssh_host:
             if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.@-]*", hostname):
                 raise SystemExit(f"Invalid SSH host: {hostname}")
-            remotes.append({"host": hostname, "name": "Mac Mini" if hostname == "mac-mini" else hostname})
+            remotes.append({"host": hostname, "name": hostname})
     userdata = args.userdata or previous.get("userdata") or str(Path.home() / ".t3/userdata")
     config_path.write_text(json.dumps({"userdata": str(Path(userdata).expanduser().resolve()), "sshHosts": remotes}, indent=2) + "\n")
     config_path.chmod(0o600)
@@ -75,7 +75,8 @@ def main():
     print(f"Local helper installed. Extension ID: {identity}")
     if remotes:
         print("Remote computers: " + ", ".join(remote["name"] for remote in remotes))
-    print(f"In chrome://extensions, enable Developer mode, choose Load unpacked, and select:\n{ROOT / 'extension'}")
+    print("Next, install T3 PR Links from the Chrome Web Store and reload any open GitHub tabs.")
+    print(f"For development, choose Load unpacked in chrome://extensions and select:\n{ROOT / 'extension'}")
 
 
 if __name__ == "__main__":

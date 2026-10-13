@@ -45,7 +45,7 @@ function showConfig(config) {
 
 async function request(message) {
   const response = await chrome.runtime.sendMessage(message);
-  if (!response?.ok) throw new Error(response?.error || "The native helper is unavailable. Run the installer and try again.");
+  if (!response?.ok) throw new Error(response?.error || "The local T3 helper is unavailable. Set it up using github.com/callmemorgan/t3-pr-links#install, then try again.");
   return response;
 }
 
@@ -93,7 +93,7 @@ document.getElementById("test").addEventListener("click", async () => {
       list.append(T3Ui.element(document, "li", "", `${environment.name}: ${environment.ok ? "connected" : environment.error || "unavailable"}`));
     }
     container.append(list);
-  } catch { status.textContent = "The helper could not be reached. Run the installer and try again."; }
+  } catch { status.textContent = "The helper could not be reached. Set it up using github.com/callmemorgan/t3-pr-links#install, then try again."; }
   finally { busy = false; updateControls(); }
 });
 void loadConfig();

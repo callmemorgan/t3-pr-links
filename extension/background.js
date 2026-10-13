@@ -89,7 +89,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   chrome.runtime.sendNativeMessage(HOST, request).then(
     (result) => sendResponse(result),
-    () => sendResponse({ ok: false, error: "The local T3 helper is unavailable. Run the installer in the extension folder, then retry." }),
+    () => sendResponse({ ok: false, error: "The local T3 helper is not installed or could not start. Set it up using github.com/callmemorgan/t3-pr-links#install, then retry." }),
   );
   return true;
 });

@@ -7,3 +7,4 @@ __pycache__/
 native/config.json
 *.sqlite
 *.sqlite-*
+dist/

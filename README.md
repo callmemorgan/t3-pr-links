@@ -8,17 +8,20 @@ An independent community extension for [T3 Code](https://github.com/pingdotgg/t3
 
 Requires Google Chrome, T3 Code, Python 3.9 or newer, and Git on macOS or Linux. Windows installation is not currently supported. Node.js is needed only to run development tests.
 
+The extension has two parts: the Chrome extension, and a small local helper that reads T3 Code's data for it. Chrome extensions can't read local files, and the Chrome Web Store can't install the helper, so you set that part up once from a terminal:
+
 ```sh
 git clone https://github.com/callmemorgan/t3-pr-links.git
 cd t3-pr-links
+python3 scripts/install.py
 ```
 
-1. Run `python3 scripts/install.py` from this folder. This installs the local helper for your Chrome profile on macOS or Linux.
-2. Open `chrome://extensions` in Google Chrome and turn on **Developer mode**.
-3. Click **Load unpacked** and select the `extension` folder in this project.
-4. Reload any GitHub tabs you already had open. The extension toolbar popup can check the connection.
+Then:
 
-Keep the `extension` folder in place while the extension is loaded. The helper is copied into your user application data directory, so it does not need a terminal or server left running. Chrome may ask to open T3 Code the first time you click a thread link.
+1. Install **T3 PR Links** from the Chrome Web Store.
+2. Reload any GitHub tabs you already had open. The extension toolbar popup can check the connection.
+
+The installer copies the helper into your user application data directory, so you can delete the cloned folder afterwards and nothing needs to stay running. To update the helper, pull the latest version and run the installer again. Chrome may ask to open T3 Code the first time you click a thread link.
 
 ## What matches
 
@@ -88,9 +91,11 @@ The helper opens SQLite in **read-only mode**, including committed changes in it
 
 V2 data (`statev2.sqlite`) takes precedence over legacy `state.sqlite`. Empty current PR lists stay empty, even if a migrated legacy field still contains an old link.
 
+The full privacy policy is in [PRIVACY.md](PRIVACY.md).
+
 ## Remove
 
-Remove the extension from `chrome://extensions`, then run:
+Remove the extension from `chrome://extensions`, then run this from a clone of the repository:
 
 ```sh
 python3 scripts/install.py --uninstall
@@ -98,10 +103,14 @@ python3 scripts/install.py --uninstall
 
 ## Development
 
+To run your working copy, run `python3 scripts/install.py`, open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and select the `extension` folder. The manifest's `key` gives the unpacked build the same ID as the store build, so the same helper serves both. Disable the store version while the unpacked one is loaded.
+
 ```sh
 npm ci
 npm test
 ```
+
+To release, bump the version in `extension/manifest.json`, `package.json` and `package-lock.json`, then run `npm run package`. It writes `dist/t3-pr-links-<version>.zip` without the manifest `key`, ready to upload in the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole).
 
 Tests cover exact matching across projects, unlinking, archived/deleted threads, V1 compatibility, read-only SQLite access and live WAL changes, native message framing, SSH aggregation, GitHub navigation and stale-response guards, fork/source branch handling, saved filters, manual refresh caching, lookup limits, safe rendering, the background message boundary, and installer config preservation. The extension itself has no build step or runtime dependencies.
 
@@ -116,6 +125,7 @@ Use Node.js 22 or newer for the tests. GitHub Actions runs the suite on Linux. B
 - `extension/background.js`: validated extension message boundary and native messaging.
 - `native/host.py`: read-only T3/SQLite and Git lookups, SSH aggregation, checkout verification, and helper configuration.
 - `scripts/install.py`: per-user helper installation/update.
+- `scripts/package.py`: Chrome Web Store upload zip.
 - `scripts/preview.py`: temporary localhost preview using sample data only; never reads T3 or opens SSH.
 
 For visual checks, run `python3 scripts/preview.py` and open the printed URL. Stop with Ctrl+C.
