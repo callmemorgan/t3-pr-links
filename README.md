@@ -97,7 +97,7 @@ npm test
 
 Tests cover exact matching across projects, unlinking, archived/deleted threads, V1 compatibility, live WAL changes, native message framing, GitHub navigation, safe rendering, and the background message boundary. The extension itself has no build step or runtime dependencies.
 
-Use Node.js 22 or newer for the tests. GitHub Actions runs the suite on macOS and Linux. Bug reports and pull requests are welcome; use synthetic examples rather than posting your T3 databases, private thread links, or computer configuration.
+Use Node.js 22 or newer for the tests. GitHub Actions runs the suite on Linux. Bug reports and pull requests are welcome; use synthetic examples rather than posting your T3 databases, private thread links, or computer configuration.
 
 ## Review map
 
